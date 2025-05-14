@@ -67,7 +67,7 @@ const Home = () => {
     }
   };
 
-  const fetchNearbyPlaces = async (lat, lng) => {
+  const fetchNearbyPlaces = async (lat, lng, query = '') => {
     if (!user && searchCount >= 2) {
       setError('Anda telah mencapai batas pencarian. Silakan login untuk melanjutkan.');
       return;
@@ -79,7 +79,9 @@ const Home = () => {
     try {
       const response = await axios.get('/api/places', {
         params: {
-          location: `${lat},${lng}`
+          lat,
+          lon: lng,
+          query
         }
       });
 
@@ -114,57 +116,13 @@ const Home = () => {
     }
   };
 
-  const handleSearch = async (query) => {
+  const handleSearch = (lat, lng, searchQuery = '') => {
     if (!user && searchCount >= 2) {
       setError('Anda telah mencapai batas pencarian. Silakan login untuk melanjutkan.');
       return;
     }
 
-    setLoading(true);
-    setError('');
-
-    try {
-      // Mendapatkan geolokasi dari query menggunakan Google Maps Geocoding API
-      // Namun karena ini contoh, kita akan menggunakan koordinat default untuk Jakarta
-      const lat = -6.2088;
-      const lng = 106.8456;
-
-      const response = await axios.get('/api/places', {
-        params: {
-          location: `${lat},${lng}`,
-          query: query
-        }
-      });
-
-       // Ensure we process the data correctly for our PlaceCard component
-      let processedPlaces = [];
-      if (response.data.places && response.data.places.length > 0) {
-        processedPlaces = response.data.places.map(place => {
-          // Use serpapi_thumbnail if available
-          const imageToUse = place.serpapi_thumbnail || place.thumbnail || place.photo;
-          
-          return {
-            ...place,
-            title: place.name || place.title,
-            image: imageToUse
-          };
-        });
-      }
-
-      setPlaces(processedPlaces);
-
-      // Tambah jumlah pencarian untuk guest user
-      if (!user) {
-        const newCount = searchCount + 1;
-        setSearchCount(newCount);
-        localStorage.setItem('guestSearchCount', newCount.toString());
-      }
-    } catch (err) {
-      console.error('Error searching places:', err);
-      setError('Gagal mencari tempat wisata. Silakan coba lagi.');
-    } finally {
-      setLoading(false);
-    }
+    fetchNearbyPlaces(lat, lng, searchQuery);
   };
 
   return (
