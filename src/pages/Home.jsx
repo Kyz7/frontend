@@ -83,7 +83,22 @@ const Home = () => {
         }
       });
 
-      setPlaces(response.data.places || []);
+      // Ensure we process the data correctly for our PlaceCard component
+      let processedPlaces = [];
+      if (response.data.places && response.data.places.length > 0) {
+        processedPlaces = response.data.places.map(place => {
+          // Use serpapi_thumbnail if available
+          const imageToUse = place.serpapi_thumbnail || place.thumbnail || place.photo;
+          
+          return {
+            ...place,
+            title: place.name || place.title,
+            image: imageToUse
+          };
+        });
+      }
+
+      setPlaces(processedPlaces);
 
       // Tambah jumlah pencarian untuk guest user
       if (!user) {
@@ -121,7 +136,22 @@ const Home = () => {
         }
       });
 
-      setPlaces(response.data.places || []);
+       // Ensure we process the data correctly for our PlaceCard component
+      let processedPlaces = [];
+      if (response.data.places && response.data.places.length > 0) {
+        processedPlaces = response.data.places.map(place => {
+          // Use serpapi_thumbnail if available
+          const imageToUse = place.serpapi_thumbnail || place.thumbnail || place.photo;
+          
+          return {
+            ...place,
+            title: place.name || place.title,
+            image: imageToUse
+          };
+        });
+      }
+
+      setPlaces(processedPlaces);
 
       // Tambah jumlah pencarian untuk guest user
       if (!user) {
@@ -193,11 +223,12 @@ const Home = () => {
               {places.map((place, index) => (
                 <Link key={place.place_id || index} to={`/detail/${place.place_id || index}`} state={{ place }}>
                   <PlaceCard 
-                    title={place.title}
-                    image={place.thumbnail}
+                    title={place.title || place.name}
+                    image={place.serpapi_thumbnail || place.thumbnail || place.photo}
                     rating={place.rating}
                     address={place.address}
                     description={place.description || "Temukan keindahan tempat wisata ini dengan mengunjunginya langsung."}
+                    place_id={place.place_id || index}
                   />
                 </Link>
               ))}

@@ -104,7 +104,7 @@ const Itinerary = () => {
                   {/* Image */}
                   <div className="relative h-48">
                     <img 
-                      src={plan.place.photo || 'https://via.placeholder.com/500x300?text=No+Image'} 
+                      src={plan.place.photo || 'https://via.placeholder.com/500x300?text=No+Image' || plan.place.thumbnail || plan.place.serpapi_thumbnail} 
                       alt={plan.place.name} 
                       className="w-full h-full object-cover"
                     />
