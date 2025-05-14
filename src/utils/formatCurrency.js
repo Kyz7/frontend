@@ -1,16 +1,24 @@
 /**
- * Format angka menjadi format mata uang Rupiah
- * @param {number} amount - Jumlah yang akan diformat
- * @param {string} currencyCode - Kode mata uang (default: IDR)
- * @returns {string} String yang telah diformat dalam mata uang
+ * Format a number to Indonesian Rupiah currency
+ * @param {number} amount - The amount to format
+ * @param {boolean} withSymbol - Whether to include the Rp symbol
+ * @returns {string} Formatted currency string
  */
-const formatCurrency = (amount, currencyCode = 'IDR') => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: currencyCode,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
+const formatCurrency = (amount, withSymbol = true) => {
+  if (amount === undefined || amount === null) {
+    return withSymbol ? 'Rp 0' : '0';
+  }
   
-  export default formatCurrency;
+  const formatter = new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  });
+  
+  const formatted = formatter.format(amount);
+  
+  return withSymbol ? formatted : formatted.replace('Rp', '').trim();
+};
+
+export default formatCurrency;

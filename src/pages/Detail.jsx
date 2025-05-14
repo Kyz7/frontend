@@ -238,13 +238,22 @@ const Detail = () => {
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-xl font-bold mb-4">Lokasi</h2>
                 <div className="h-80 rounded-lg overflow-hidden">
-                  {place.location && (
+                {place.location && (
                     <Map 
-                      location={{ 
+                      center={{ 
                         lat: place.location.lat, 
                         lng: place.location.lng 
                       }} 
-                      name={place.title || place.name}
+                      zoom={15}
+                      markers={[
+                        {
+                          position: {
+                            lat: place.location.lat,
+                            lng: place.location.lng
+                          },
+                          title: place.title || place.name
+                        }
+                      ]}
                     />
                   )}
                 </div>
