@@ -69,7 +69,7 @@ const Detail = () => {
         },
         rating: 4.5,
         description: 'Tempat wisata yang indah dengan pemandangan alam yang menakjubkan',
-        price: 150000,
+        price: 0,
         thumbnail: 'https://via.placeholder.com/500x300',
         reviews: [
           { user: 'John Doe', rating: 5, comment: 'Tempat yang sangat indah!' },
@@ -93,19 +93,23 @@ const Detail = () => {
       
       // Use the imported API function if available
       try {
-        const weatherData = await getWeather(lat, lng, today);
-        setWeather(weatherData);
-      } catch (apiError) {
-        // Fallback to direct axios call if API function fails
-        console.error('Error using API function:', apiError);
-        const response = await axios.get('/api/weather', {
-          params: {
-            lat,
-            lon: lng,
-            date: today
-          }
-        });
+        const response = await getWeather(lat, lng, today);
         setWeather(response.data);
+      } catch (apiError) {
+        console.error('Error using API function:', apiError);
+        // Fallback to direct axios call if API function fails
+        try {
+          const response = await axios.get('/api/weather', {
+            params: {
+              lat,
+              lon: lng,
+              date: today
+            }
+          });
+          setWeather(response.data);
+        } catch (axiosError) {
+          throw axiosError; // Let this be caught by the outer catch
+        }
       }
     } catch (err) {
       console.error('Error fetching weather:', err);
@@ -235,30 +239,26 @@ const Detail = () => {
               </div>
               
               {/* Map */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-bold mb-4">Lokasi</h2>
-                <div className="h-80 rounded-lg overflow-hidden">
-                {place.location && (
-                    <Map 
-                      center={{ 
-                        lat: place.location.lat, 
-                        lng: place.location.lng 
-                      }} 
-                      zoom={15}
-                      markers={[
-                        {
-                          position: {
-                            lat: place.location.lat,
-                            lng: place.location.lng
-                          },
-                          title: place.title || place.name
-                        }
-                      ]}
-                    />
-                  )}
-                </div>
-                <p className="mt-3 text-gray-600">{place.address}</p>
-              </div>
+              <div className="h-80 rounded-lg overflow-hidden">
+  {place && (
+    <Map 
+      center={{ 
+        lat: (place.latitude || (place.location && place.location.lat)) || -6.2088, 
+        lng: (place.longitude || (place.location && place.location.lng)) || 106.8456
+      }} 
+      zoom={15}
+      markers={[
+        {
+          position: {
+            lat: (place.latitude || (place.location && place.location.lat)) || -6.2088,
+            lng: (place.longitude || (place.location && place.location.lng)) || 106.8456
+          },
+          title: place.title || place.name || 'Lokasi'
+        }
+      ]}
+    />
+  )}
+</div>
               
               {/* Reviews */}
               <div className="bg-white rounded-lg shadow-md p-6">
