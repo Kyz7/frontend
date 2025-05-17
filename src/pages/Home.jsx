@@ -180,14 +180,7 @@ const Home = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {places.map((place, index) => (
                 <Link key={place.place_id || index} to={`/detail/${place.place_id || index}`} state={{ place }}>
-                  <PlaceCard 
-                    title={place.title || place.name}
-                    image={place.serpapi_thumbnail || place.thumbnail || place.photo}
-                    rating={place.rating}
-                    address={place.address}
-                    description={place.description || "Temukan keindahan tempat wisata ini dengan mengunjunginya langsung."}
-                    place_id={place.place_id || index}
-                  />
+                  <PlaceCard place={place} />
                 </Link>
               ))}
             </div>

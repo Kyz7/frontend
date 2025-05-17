@@ -23,15 +23,20 @@ const Detail = () => {
 
   // Mendapatkan tempat dari state router jika ada (dari Link)
   useEffect(() => {
+    console.log('PLACE OBJECT:', location.state?.place);
     if (location.state?.place) {
       setPlace(location.state.place);
       setLoading(false);
       // Jika tempat sudah ada, ambil data cuaca
-      if (location.state.place.latitude && location.state.place.longitude) {
-        fetchWeather(location.state.place.latitude, location.state.place.longitude);
-      } else if (location.state.place.location?.lat && location.state.place.location?.lng) {
-        fetchWeather(location.state.place.location.lat, location.state.place.location.lng);
-      }
+      const p = location.state.place;
+
+if (p.latitude && p.longitude) {
+  fetchWeather(p.latitude, p.longitude);
+} else if (p.location?.lat && p.location?.lng) {
+  fetchWeather(p.location.lat, p.location.lng);
+} else if (p.gps_coordinates?.latitude && p.gps_coordinates?.longitude) {
+  fetchWeather(p.gps_coordinates.latitude, p.gps_coordinates.longitude);
+}
     } else {
       // Jika tidak ada di state, coba ambil dari API
       fetchPlaceDetails();
