@@ -18,7 +18,7 @@ const Home = () => {
   const [weather, setWeather] = useState(null);
 
   useEffect(() => {
-    // Mendapatkan jumlah pencarian dari local storage untuk guest user
+    // Get search count from local storage for guest users
     if (!user) {
       const count = localStorage.getItem('guestSearchCount');
       if (count) {
@@ -26,27 +26,54 @@ const Home = () => {
       }
     }
 
-    // Mendapatkan lokasi pengguna
+    // Set loading state while getting user location
+    setLoading(true);
+
+    // Get user location
     navigator.geolocation.getCurrentPosition(
       position => {
         setLocation({
           lat: position.coords.latitude,
           lng: position.coords.longitude
         });
-        // Mengambil data cuaca untuk lokasi pengguna
+        // Get weather data for user location
         fetchWeather(position.coords.latitude, position.coords.longitude);
-        // Langsung mencari tempat wisata sekitar
+        // Immediately search for nearby places
         fetchNearbyPlaces(position.coords.latitude, position.coords.longitude);
       },
       error => {
         console.error('Error getting location:', error);
-        setError('Tidak dapat mengakses lokasi Anda. Mohon izinkan akses lokasi atau cari secara manual.');
-        // Gunakan lokasi default (Jakarta)
+        
+        // Provide more detailed error message
+        let errorMsg = 'Tidak dapat mengakses lokasi Anda. ';
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMsg += 'Izin lokasi ditolak. Silakan aktifkan izin lokasi di browser Anda atau cari secara manual.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMsg += 'Informasi lokasi tidak tersedia. Menggunakan lokasi default.';
+            break;
+          case error.TIMEOUT:
+            errorMsg += 'Permintaan lokasi timeout. Menggunakan lokasi default.';
+            break;
+          default:
+            errorMsg += 'Menggunakan lokasi default.';
+        }
+        
+        setError(errorMsg);
+        
+        // Use default location (Jakarta)
         const defaultLat = -6.2088;
         const defaultLng = 106.8456;
         setLocation({ lat: defaultLat, lng: defaultLng });
         fetchWeather(defaultLat, defaultLng);
         fetchNearbyPlaces(defaultLat, defaultLng);
+      },
+      // Options for getCurrentPosition
+      { 
+        enableHighAccuracy: true, 
+        timeout: 10000, 
+        maximumAge: 0 
       }
     );
   }, [user]);
@@ -59,17 +86,20 @@ const Home = () => {
           lat,
           lon: lng,
           date: today
-        }
+        },
+        timeout: 10000 // 10 second timeout
       });
       setWeather(response.data);
     } catch (err) {
       console.error('Error fetching weather:', err);
+      // Weather is non-critical, so we just log the error and don't show it to user
     }
   };
 
   const fetchNearbyPlaces = async (lat, lng, query = '') => {
     if (!user && searchCount >= 2) {
       setError('Anda telah mencapai batas pencarian. Silakan login untuk melanjutkan.');
+      setLoading(false);
       return;
     }
 
@@ -82,8 +112,14 @@ const Home = () => {
           lat,
           lon: lng,
           query
-        }
+        },
+        timeout: 15000 // 15 second timeout
       });
+
+      // Check if we got valid data
+      if (!response.data || !response.data.places) {
+        throw new Error('Invalid response format from places API');
+      }
 
       // Ensure we process the data correctly for our PlaceCard component
       let processedPlaces = [];
@@ -98,11 +134,14 @@ const Home = () => {
             image: imageToUse
           };
         });
+        
+        setPlaces(processedPlaces);
+      } else {
+        setPlaces([]);
+        setError('Tidak ada destinasi wisata yang ditemukan di lokasi ini. Coba pencarian lain atau ubah lokasi.');
       }
 
-      setPlaces(processedPlaces);
-
-      // Tambah jumlah pencarian untuk guest user
+      // Increment search count for guest users
       if (!user) {
         const newCount = searchCount + 1;
         setSearchCount(newCount);
@@ -110,7 +149,29 @@ const Home = () => {
       }
     } catch (err) {
       console.error('Error fetching places:', err);
-      setError('Gagal mendapatkan tempat wisata. Silakan coba lagi.');
+      
+      let errorMsg = 'Gagal mendapatkan tempat wisata. ';
+      
+      if (err.response) {
+        // The request was made and the server responded with a status code
+        if (err.response.status === 404) {
+          errorMsg += 'Tidak ada tempat wisata yang ditemukan di lokasi ini.';
+        } else if (err.response.status === 429) {
+          errorMsg += 'Batas penggunaan API tercapai. Silakan coba lagi nanti.';
+        } else if (err.response.status >= 500) {
+          errorMsg += 'Terjadi masalah dengan server. Silakan coba lagi nanti.';
+        } else if (err.response.data && err.response.data.message) {
+          errorMsg += err.response.data.message;
+        }
+      } else if (err.request) {
+        // The request was made but no response was received
+        errorMsg += 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
+      } else if (err.code === 'ECONNABORTED') {
+        errorMsg += 'Permintaan timeout. Silakan coba lagi nanti.';
+      }
+      
+      setError(errorMsg);
+      setPlaces([]);
     } finally {
       setLoading(false);
     }
@@ -140,12 +201,6 @@ const Home = () => {
               
               <SearchBar onSearch={handleSearch} />
               
-              {error && (
-                <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg">
-                  {error}
-                </div>
-              )}
-              
               {!user && (
                 <div className="mt-4 text-sm text-blue-200">
                   {searchCount >= 2 ? (
@@ -168,6 +223,20 @@ const Home = () => {
           </div>
         )}
         
+        {/* Error Display (placed above Places section) */}
+        {error && (
+          <div className="container mx-auto px-4 mt-6">
+            <div className="bg-red-100 text-red-700 p-4 rounded-lg shadow">
+              <div className="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 mr-2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <p>{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Places Section */}
         <section className="container mx-auto px-4 py-8">
           <h2 className="text-2xl font-bold mb-6">Destinasi Wisata Populer</h2>
@@ -184,9 +253,10 @@ const Home = () => {
                 </Link>
               ))}
             </div>
-          ) : (
+          ) : !error && (
             <div className="text-center py-12 text-gray-500">
-              {error ? <p>{error}</p> : <p>Tidak ada destinasi wisata yang ditemukan.</p>}
+              <p>Tidak ada destinasi wisata yang ditemukan.</p>
+              <p className="mt-2">Coba cari dengan kata kunci atau lokasi yang berbeda.</p>
             </div>
           )}
         </section>
