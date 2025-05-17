@@ -18,33 +18,30 @@ const Home = () => {
   const [weather, setWeather] = useState(null);
 
   useEffect(() => {
-    // Get search count from local storage for guest users
     if (!user) {
       const count = localStorage.getItem('guestSearchCount');
       if (count) {
         setSearchCount(parseInt(count));
       }
+    } else {
+      setSearchCount(0);
+      localStorage.removeItem('guestSearchCount');
     }
 
-    // Set loading state while getting user location
     setLoading(true);
 
-    // Get user location
     navigator.geolocation.getCurrentPosition(
       position => {
         setLocation({
           lat: position.coords.latitude,
           lng: position.coords.longitude
         });
-        // Get weather data for user location
         fetchWeather(position.coords.latitude, position.coords.longitude);
-        // Immediately search for nearby places
         fetchNearbyPlaces(position.coords.latitude, position.coords.longitude);
       },
       error => {
         console.error('Error getting location:', error);
-        
-        // Provide more detailed error message
+
         let errorMsg = 'Tidak dapat mengakses lokasi Anda. ';
         switch(error.code) {
           case error.PERMISSION_DENIED:
@@ -61,15 +58,13 @@ const Home = () => {
         }
         
         setError(errorMsg);
-        
-        // Use default location (Jakarta)
+
         const defaultLat = -6.2088;
         const defaultLng = 106.8456;
         setLocation({ lat: defaultLat, lng: defaultLng });
         fetchWeather(defaultLat, defaultLng);
         fetchNearbyPlaces(defaultLat, defaultLng);
       },
-      // Options for getCurrentPosition
       { 
         enableHighAccuracy: true, 
         timeout: 10000, 
@@ -87,12 +82,11 @@ const Home = () => {
           lon: lng,
           date: today
         },
-        timeout: 10000 // 10 second timeout
+        timeout: 10000
       });
       setWeather(response.data);
     } catch (err) {
       console.error('Error fetching weather:', err);
-      // Weather is non-critical, so we just log the error and don't show it to user
     }
   };
 
@@ -113,19 +107,16 @@ const Home = () => {
           lon: lng,
           query
         },
-        timeout: 15000 // 15 second timeout
+        timeout: 15000
       });
 
-      // Check if we got valid data
       if (!response.data || !response.data.places) {
         throw new Error('Invalid response format from places API');
       }
 
-      // Ensure we process the data correctly for our PlaceCard component
       let processedPlaces = [];
       if (response.data.places && response.data.places.length > 0) {
         processedPlaces = response.data.places.map(place => {
-          // Use serpapi_thumbnail if available
           const imageToUse = place.serpapi_thumbnail || place.thumbnail || place.photo;
           
           return {
@@ -141,7 +132,7 @@ const Home = () => {
         setError('Tidak ada destinasi wisata yang ditemukan di lokasi ini. Coba pencarian lain atau ubah lokasi.');
       }
 
-      // Increment search count for guest users
+      // Increment search count for guest users only
       if (!user) {
         const newCount = searchCount + 1;
         setSearchCount(newCount);
@@ -164,7 +155,6 @@ const Home = () => {
           errorMsg += err.response.data.message;
         }
       } else if (err.request) {
-        // The request was made but no response was received
         errorMsg += 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
       } else if (err.code === 'ECONNABORTED') {
         errorMsg += 'Permintaan timeout. Silakan coba lagi nanti.';
@@ -178,6 +168,7 @@ const Home = () => {
   };
 
   const handleSearch = (lat, lng, searchQuery = '') => {
+    // Apply search limits only for non-logged in users
     if (!user && searchCount >= 2) {
       setError('Anda telah mencapai batas pencarian. Silakan login untuk melanjutkan.');
       return;

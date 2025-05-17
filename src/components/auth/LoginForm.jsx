@@ -1,8 +1,8 @@
-import { useState, useContext } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
 const LoginForm = ({ onLoginSuccess, onLoginError }) => {
-    const { login } = useAuth();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -22,24 +22,9 @@ const LoginForm = ({ onLoginSuccess, onLoginError }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login gagal');
-      }
-
-      // Call login function from AuthContext
-      login(data.token);
+      const success = await login(formData.username, formData.password);
       
-      if (onLoginSuccess) {
+      if (success && onLoginSuccess) {
         onLoginSuccess();
       }
     } catch (error) {

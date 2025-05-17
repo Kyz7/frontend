@@ -1,16 +1,14 @@
-// Fix 2: Update WeatherWidget.jsx to handle different data formats
-// src/components/common/WeatherWidget.jsx
+
 
 import React from 'react';
 
 /**
- * Weather widget component to display weather forecast
  * 
  * @param {Object} props
- * @param {Object} props.weatherData - Weather data from API
+ * @param {Object} props.weatherData 
  */
 const WeatherWidget = ({ weatherData }) => {
-  // Handle null or undefined data
+
   if (!weatherData) {
     return (
       <div className="p-4 bg-gray-100 rounded-md text-center">
@@ -19,19 +17,16 @@ const WeatherWidget = ({ weatherData }) => {
     );
   }
 
-  // Extract data from the weatherData object
-  // Try different possible data structures
   let formattedData;
   
   if (weatherData.data && weatherData.data.formatted) {
     formattedData = weatherData.data.formatted;
   } else if (weatherData.hourly) {
-    // Create formatted data from raw weather API format
     const temps = weatherData.hourly.temperature_2m;
     const codes = weatherData.hourly.weathercode;
     
     formattedData = {
-      conditions: getConditionText(codes[12] || 0), // Get mid-day condition
+      conditions: getConditionText(codes[12] || 0),
       date: new Date().toLocaleDateString('id-ID'),
       location: 'Lokasi saat ini',
       weathercode: codes[12] || 0,
@@ -42,7 +37,6 @@ const WeatherWidget = ({ weatherData }) => {
       }
     };
   } else {
-    // Create default data if nothing works
     formattedData = {
       conditions: 'Cerah',
       date: new Date().toLocaleDateString('id-ID'),
@@ -56,7 +50,6 @@ const WeatherWidget = ({ weatherData }) => {
     };
   }
 
-  // Function to get weather condition text based on code
   function getConditionText(code) {
     if (code === 0) return 'Cerah';
     if (code === 1) return 'Cerah Berawan';
@@ -69,7 +62,6 @@ const WeatherWidget = ({ weatherData }) => {
     return 'Tidak diketahui';
   }
 
-  // Function to get weather icon based on weather code
   const getWeatherIcon = (code) => {
     if (code === 0) return '☀️'; // Cerah
     if (code === 1) return '🌤️'; // Cerah Berawan

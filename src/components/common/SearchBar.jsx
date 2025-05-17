@@ -1,4 +1,3 @@
-// File: src/components/common/SearchBar.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
 
@@ -14,14 +13,12 @@ const SearchBar = ({ onSearch }) => {
     setIsLoading(true);
     setErrorMessage('');
     
-    // First, validate input
     if (location !== 'current' && !location.trim()) {
       setErrorMessage('Mohon masukkan nama lokasi atau pilih "Lokasi Saya"');
       setIsLoading(false);
       return;
     }
-    
-    // Use current location if user selected "Lokasi Saya"
+
     if (location === 'current') {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -33,8 +30,7 @@ const SearchBar = ({ onSearch }) => {
           (error) => {
             console.error('Error getting location:', error);
             setIsLoading(false);
-            
-            // Provide more specific error messages based on the error code
+
             let errorMsg = 'Tidak dapat mengakses lokasi Anda. ';
             switch(error.code) {
               case error.PERMISSION_DENIED:
@@ -52,10 +48,9 @@ const SearchBar = ({ onSearch }) => {
             
             setErrorMessage(errorMsg);
           },
-          // Options for getCurrentPosition
           { 
             enableHighAccuracy: true, 
-            timeout: 15000, // Increased timeout 
+            timeout: 15000, 
             maximumAge: 0 
           }
         );
@@ -64,22 +59,21 @@ const SearchBar = ({ onSearch }) => {
         setErrorMessage('Geolocation tidak didukung di browser Anda. Silakan masukkan nama lokasi secara manual.');
       }
     } else {
-      // Use location name entered by user
+
       try {
-        // Make the location more specific if it's not already
+
         let searchLocation = location.trim();
         if (!searchLocation.toLowerCase().includes('indonesia') && 
-            !searchLocation.match(/\d{5,}/) &&  // Exclude entries that look like coordinates or postal codes
-            searchLocation.split(',').length < 2) {  // Only append if it doesn't already have a region
+            !searchLocation.match(/\d{5,}/) && 
+            searchLocation.split(',').length < 2) {  
           searchLocation += ', Indonesia';
         }
         
         console.log(`Searching for location: "${searchLocation}"`);
-        
-        // Call geocoding API to convert location name to coordinates
+
         const response = await axios.get('/api/geocode', {
           params: { address: searchLocation },
-          timeout: 15000 // 15 second timeout
+          timeout: 15000 
         });
         
         if (response.data && response.data.results && response.data.results.length > 0) {
@@ -90,13 +84,11 @@ const SearchBar = ({ onSearch }) => {
         }
       } catch (error) {
         console.error('Geocoding error:', error);
-        
-        // Provide specific error messages based on the API response
+
         let errorMsg = 'Gagal mendapatkan koordinat lokasi. ';
         
         if (error.response) {
-          // The request was made and the server responded with a status code
-          // outside of the 2xx range
+
           console.log('Error response:', error.response.data);
           
           const status = error.response.status;
@@ -112,7 +104,7 @@ const SearchBar = ({ onSearch }) => {
             errorMsg = 'Masalah dengan server. Silakan coba lagi nanti.';
           }
         } else if (error.request) {
-          // The request was made but no response was received
+
           errorMsg = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda dan coba lagi.';
         } else if (error.code === 'ECONNABORTED') {
           errorMsg = 'Permintaan timeout. Silakan coba lagi nanti.';
@@ -130,11 +122,9 @@ const SearchBar = ({ onSearch }) => {
     setErrorMessage('');
   };
 
-  // Use this to validate the location input if needed
   const validateLocationInput = (inputValue) => {
     setLocation(inputValue);
-    
-    // Clear any previous error messages when user starts typing
+
     if (errorMessage) {
       setErrorMessage('');
     }

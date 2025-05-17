@@ -10,7 +10,6 @@ const Login = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   
-  // Check if there's a message passed from redirects
   const message = location.state?.message || null;
 
   return (

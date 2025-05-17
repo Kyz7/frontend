@@ -9,10 +9,9 @@ const Button = ({
     fullWidth = false,
     icon = null,
   }) => {
-    // Base button styles
+
     const baseStyles = 'font-medium rounded focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors';
     
-    // Variant styles
     const variantStyles = {
       primary: 'bg-blue-500 hover:bg-blue-600 text-white focus:ring-blue-500',
       secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-800 focus:ring-gray-500',
@@ -26,7 +25,7 @@ const Button = ({
       outline: 'bg-transparent border border-current hover:bg-blue-50 text-blue-500 focus:ring-blue-500',
     };
     
-    // Size styles
+
     const sizeStyles = {
       xs: 'py-1 px-2 text-xs',
       sm: 'py-1.5 px-3 text-sm',
@@ -35,13 +34,10 @@ const Button = ({
       xl: 'py-3 px-6 text-xl',
     };
     
-    // Disabled styles
     const disabledStyles = disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer';
-    
-    // Full width style
+
     const widthStyle = fullWidth ? 'w-full' : '';
-    
-    // Icon styles
+
     const iconStyles = icon ? 'flex items-center justify-center' : '';
     
     return (

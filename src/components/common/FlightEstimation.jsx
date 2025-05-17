@@ -7,9 +7,8 @@ const FlightEstimation = ({ userLocation, destinationLocation }) => {
   const [error, setError] = useState('');
   const [showFlightOption, setShowFlightOption] = useState(false);
 
-  // Calculate distance between two points using Haversine formula
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Radius of the earth in km
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = 
@@ -17,15 +16,12 @@ const FlightEstimation = ({ userLocation, destinationLocation }) => {
       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
       Math.sin(dLon/2) * Math.sin(dLon/2); 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-    const distance = R * c; // Distance in km
+    const distance = R * c;
     return distance;
   };
   
-  // Determine nearest airports based on coordinates
   const findNearestAirport = async (lat, lng) => {
     try {
-      // In a real implementation, you would call an API to find the nearest airport
-      // For demonstration, we'll return mock data
       return { 
         code: lat > 0 ? 'CGK' : 'DPS', 
         name: lat > 0 ? 'Soekarno-Hatta International Airport' : 'Ngurah Rai International Airport'
@@ -41,7 +37,6 @@ const FlightEstimation = ({ userLocation, destinationLocation }) => {
       if (!userLocation || !destinationLocation) return;
       
       try {
-        // Extract coordinates, handling different possible structures
         const userLat = userLocation.lat || userLocation.latitude;
         const userLng = userLocation.lng || userLocation.longitude;
         const destLat = destinationLocation.lat || destinationLocation.latitude || 
@@ -53,19 +48,15 @@ const FlightEstimation = ({ userLocation, destinationLocation }) => {
           console.error('Missing coordinate data');
           return;
         }
-        
-        // Calculate distance between locations
+
         const distance = calculateDistance(userLat, userLng, destLat, destLng);
         
-        // If distance is greater than 200km, suggest flight
         if (distance > 200) {
           setShowFlightOption(true);
-          
-          // Find nearest airports
+
           const originAirport = await findNearestAirport(userLat, userLng);
           const destAirport = await findNearestAirport(destLat, destLng);
           
-          // Get flight estimation
           if (originAirport && destAirport) {
             await fetchFlightEstimation(originAirport.code, destAirport.code);
           }
@@ -89,8 +80,7 @@ const FlightEstimation = ({ userLocation, destinationLocation }) => {
       const response = await axios.post('/api/flight/estimate', { from, to });
       
       if (response.data && response.data.flights) {
-        // Estimate flight cost based on distance (simple formula for demo)
-        const flightCost = Math.floor(Math.random() * 1000000) + 500000; // Between 500,000 and 1,500,000 IDR
+        const flightCost = Math.floor(Math.random() * 1000000) + 500000;
         
         const flightEstimationData = {
           flights: response.data.flights,
@@ -100,14 +90,12 @@ const FlightEstimation = ({ userLocation, destinationLocation }) => {
         };
         
         setFlightData(flightEstimationData);
-        
-        // Store flight estimation data in localStorage for use by other components
+
         localStorage.setItem('flightEstimation', JSON.stringify(flightEstimationData));
       }
     } catch (err) {
       console.error('Error fetching flight data:', err);
       
-      // Fallback to mock data if API fails
       const mockFlightData = {
         flights: [
           {
@@ -125,7 +113,6 @@ const FlightEstimation = ({ userLocation, destinationLocation }) => {
       
       setFlightData(mockFlightData);
       
-      // Store mock flight data in localStorage
       localStorage.setItem('flightEstimation', JSON.stringify(mockFlightData));
       
       setError('Using estimated flight data');

@@ -24,7 +24,6 @@ const Detail = () => {
   const [viewCount, setViewCount] = useState(0);
   const [userLocation, setUserLocation] = useState(null);
 
-  // Get user's current location when component mounts
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -36,24 +35,20 @@ const Detail = () => {
         },
         (error) => {
           console.error('Error getting user location:', error);
-          // Set default location (Jakarta)
           setUserLocation({ lat: -6.2088, lng: 106.8456 });
         }
       );
     } else {
       console.log('Geolocation is not supported by this browser.');
-      // Set default location (Jakarta)
       setUserLocation({ lat: -6.2088, lng: 106.8456 });
     }
   }, []);
 
-  // Mendapatkan tempat dari state router jika ada (dari Link)
   useEffect(() => {
     console.log('PLACE OBJECT:', location.state?.place);
     if (location.state?.place) {
       setPlace(location.state.place);
       setLoading(false);
-      // Jika tempat sudah ada, ambil data cuaca
       const p = location.state.place;
 
       if (p.latitude && p.longitude) {
@@ -64,18 +59,15 @@ const Detail = () => {
         fetchWeather(p.gps_coordinates.latitude, p.gps_coordinates.longitude);
       }
     } else {
-      // Jika tidak ada di state, coba ambil dari API
       fetchPlaceDetails();
     }
 
-    // Mendapatkan jumlah view dari local storage untuk guest user
     if (!user) {
       const count = localStorage.getItem('guestViewCount') || '0';
       const newCount = parseInt(count) + 1;
       setViewCount(newCount);
       localStorage.setItem('guestViewCount', newCount.toString());
-      
-      // Redirect jika sudah melebihi batas
+
       if (newCount > 2) {
         navigate('/login', { 
           state: { message: 'Login untuk melihat lebih banyak detail tempat wisata' } 
@@ -87,10 +79,7 @@ const Detail = () => {
   const fetchPlaceDetails = async () => {
     setLoading(true);
     try {
-      // Dalam implementasi nyata, Anda akan mengambil detail dari API backend
-      // Misalnya: const response = await axios.get(`/api/places/${id}`);
-      // Namun untuk contoh ini, kita gunakan data dummy
-      
+
       const dummyPlace = {
         title: 'Tempat Wisata ' + id,
         address: 'Jl. Contoh No. 123, Kota Wisata',

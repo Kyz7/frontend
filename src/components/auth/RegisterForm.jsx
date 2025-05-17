@@ -18,8 +18,7 @@ const RegisterForm = ({ onRegisterSuccess, onRegisterError }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate passwords match
+
     if (formData.password !== formData.confirmPassword) {
       onRegisterError('Password tidak cocok');
       return;

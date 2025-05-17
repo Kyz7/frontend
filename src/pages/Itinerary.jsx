@@ -50,7 +50,6 @@ const Itinerary = () => {
         }
       });
       
-      // Refresh daftar rencana
       fetchPlans();
     } catch (err) {
       console.error('Error deleting plan:', err);
@@ -58,7 +57,6 @@ const Itinerary = () => {
     }
   };
 
-  // Redirect ke login jika tidak login
   if (!user) {
     return <Navigate to="/login" state={{ message: 'Silakan login untuk melihat itinerary Anda' }} />;
   }

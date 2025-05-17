@@ -1,4 +1,3 @@
-// pages/api/places-proxy.js
 export default async function handler(req, res) {
     try {
       const { location } = req.query;

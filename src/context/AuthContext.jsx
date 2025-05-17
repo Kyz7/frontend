@@ -1,4 +1,3 @@
-// File: src/context/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { login as loginApi, register as registerApi } from '../api';
@@ -15,11 +14,9 @@ export const AuthProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    // Check if token exists in localStorage
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        // Decode JWT token to get user info (simple decode, not validation)
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
         const jsonPayload = decodeURIComponent(
@@ -48,9 +45,10 @@ export const AuthProvider = ({ children }) => {
       const { token } = response.data;
       
       localStorage.setItem('token', token);
+
+      localStorage.removeItem('guestSearchCount');
       localStorage.removeItem('guestViewCount');
-      
-      // Decode JWT token to get user info
+
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       const jsonPayload = decodeURIComponent(

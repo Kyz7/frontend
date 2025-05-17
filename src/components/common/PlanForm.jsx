@@ -14,15 +14,14 @@ const PlanForm = ({ place, className }) => {
   const [nearestAirports, setNearestAirports] = useState(null);
 
   useEffect(() => {
-    // Set default dates (today and tomorrow)
+
     const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
     
     setStartDate(formatDate(today));
     setEndDate(formatDate(tomorrow));
-    
-    // Check if flight estimation is available from localStorage
+
     const flightEstimation = localStorage.getItem('flightEstimation');
     if (flightEstimation) {
       try {
@@ -42,32 +41,27 @@ const PlanForm = ({ place, className }) => {
     }
   }, []);
 
-  // Format date to YYYY-MM-DD for input field
   const formatDate = (date) => {
     return date.toISOString().split('T')[0];
   };
 
-  // Calculate duration and total cost
   const calculateEstimation = async () => {
     if (!startDate || !endDate) return;
     
     setLoading(true);
     
     try {
-      // Calculate locally first
       const start = new Date(startDate);
       const end = new Date(endDate);
-      const duration = (end - start) / (1000 * 60 * 60 * 24) + 1; // +1 to include both start and end days
-      const pricePerDay = place.price || 150000; // Default price if not provided
+      const duration = (end - start) / (1000 * 60 * 60 * 24) + 1;
+      const pricePerDay = place.price || 150000;
       
       let totalCost = pricePerDay * duration * (parseInt(adults) + parseInt(children) * 0.5);
       
-      // Add flight cost if option is checked
       if (includeFlightCost && flightCost > 0) {
-        totalCost += flightCost * (parseInt(adults) + parseInt(children) * 0.75); // Children get 25% discount
+        totalCost += flightCost * (parseInt(adults) + parseInt(children) * 0.75);
       }
       
-      // Then try to get more accurate estimate from the server
       try {
         const response = await axios.post('/api/estimate', {
           pricePerDay,
@@ -85,7 +79,6 @@ const PlanForm = ({ place, className }) => {
             flightIncluded: includeFlightCost
           });
         } else {
-          // If server doesn't provide totalCost, use our local calculation
           setEstimation({
             duration,
             totalCost,
@@ -94,7 +87,6 @@ const PlanForm = ({ place, className }) => {
         }
       } catch (error) {
         console.error('Error getting server estimation:', error);
-        // Fallback to local calculation
         setEstimation({
           duration,
           totalCost,
@@ -108,7 +100,6 @@ const PlanForm = ({ place, className }) => {
     }
   };
 
-  // Handle date changes and recalculate estimation
   useEffect(() => {
     if (startDate && endDate) {
       calculateEstimation();
@@ -117,7 +108,6 @@ const PlanForm = ({ place, className }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // You would typically handle the booking process here
     alert(`Berhasil! Rencana perjalanan Anda telah disimpan.`);
   };
 
