@@ -1,17 +1,18 @@
 // File: src/components/common/SearchBar.jsx
 import React, { useState } from 'react';
+import axios from 'axios';
 
 const SearchBar = ({ onSearch }) => {
   const [location, setLocation] = useState('');
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     setIsLoading(true);
     
-    // Getting user's current location if they choose "Lokasi Saya"
+    // Menggunakan lokasi saat ini jika pengguna memilih "Lokasi Saya"
     if (location === 'current') {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -31,16 +32,25 @@ const SearchBar = ({ onSearch }) => {
         alert('Geolocation tidak didukung di browser Anda.');
       }
     } else {
-      // Use a geocoding service to convert location name to coordinates
-      // For now, we'll use dummy coordinates for demo purposes
-      // In production, you'd use Google's Geocoding API or similar
-      setTimeout(() => {
-        // Dummy coordinates for Jakarta
-        const latitude = -6.2088;
-        const longitude = 106.8456;
-        onSearch(latitude, longitude, query);
+      // Menggunakan nama lokasi yang diinputkan pengguna
+      try {
+        // Panggil API geocoding untuk mengubah nama lokasi menjadi koordinat
+        const response = await axios.get('/api/geocode', {
+          params: { address: location }
+        });
+        
+        if (response.data && response.data.results && response.data.results.length > 0) {
+          const { lat, lng } = response.data.results[0].geometry.location;
+          onSearch(lat, lng, query);
+        } else {
+          alert('Lokasi tidak ditemukan. Silakan coba dengan nama lokasi yang lebih spesifik.');
+        }
+      } catch (error) {
+        console.error('Geocoding error:', error);
+        alert('Gagal mendapatkan koordinat lokasi. Silakan coba lagi.');
+      } finally {
         setIsLoading(false);
-      }, 1000);
+      }
     }
   };
 
