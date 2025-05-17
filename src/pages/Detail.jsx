@@ -1,3 +1,4 @@
+// Updated Detail.jsx with FlightEstimation component integration
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -6,6 +7,7 @@ import Footer from '../components/layout/Footer';
 import Map from '../components/common/Map';
 import WeatherWidget from '../components/common/WeatherWidget';
 import PlanForm from '../components/common/PlanForm';
+import FlightEstimation from '../components/common/FlightEstimation';
 import { useAuth } from '../context/AuthContext';
 import formatCurrency from '../utils/formatCurrency';
 import { getWeather } from '../api';
@@ -20,6 +22,30 @@ const Detail = () => {
   const [error, setError] = useState('');
   const [weather, setWeather] = useState(null);
   const [viewCount, setViewCount] = useState(0);
+  const [userLocation, setUserLocation] = useState(null);
+
+  // Get user's current location when component mounts
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.error('Error getting user location:', error);
+          // Set default location (Jakarta)
+          setUserLocation({ lat: -6.2088, lng: 106.8456 });
+        }
+      );
+    } else {
+      console.log('Geolocation is not supported by this browser.');
+      // Set default location (Jakarta)
+      setUserLocation({ lat: -6.2088, lng: 106.8456 });
+    }
+  }, []);
 
   // Mendapatkan tempat dari state router jika ada (dari Link)
   useEffect(() => {
@@ -30,13 +56,13 @@ const Detail = () => {
       // Jika tempat sudah ada, ambil data cuaca
       const p = location.state.place;
 
-if (p.latitude && p.longitude) {
-  fetchWeather(p.latitude, p.longitude);
-} else if (p.location?.lat && p.location?.lng) {
-  fetchWeather(p.location.lat, p.location.lng);
-} else if (p.gps_coordinates?.latitude && p.gps_coordinates?.longitude) {
-  fetchWeather(p.gps_coordinates.latitude, p.gps_coordinates.longitude);
-}
+      if (p.latitude && p.longitude) {
+        fetchWeather(p.latitude, p.longitude);
+      } else if (p.location?.lat && p.location?.lng) {
+        fetchWeather(p.location.lat, p.location.lng);
+      } else if (p.gps_coordinates?.latitude && p.gps_coordinates?.longitude) {
+        fetchWeather(p.gps_coordinates.latitude, p.gps_coordinates.longitude);
+      }
     } else {
       // Jika tidak ada di state, coba ambil dari API
       fetchPlaceDetails();
@@ -179,6 +205,12 @@ if (p.latitude && p.longitude) {
   // Process image URL based on available properties
   const imageUrl = place.serpapi_thumbnail || place.photo || place.thumbnail || 'https://via.placeholder.com/800x400?text=No+Image';
 
+  // Get destination location for flight estimation
+  const destinationLocation = {
+    lat: place.latitude || (place.location && place.location.lat) || -6.2088,
+    lng: place.longitude || (place.location && place.location.lng) || 106.8456
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -237,6 +269,14 @@ if (p.latitude && p.longitude) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
+              {/* Flight Estimation */}
+              {userLocation && (
+                <FlightEstimation 
+                  userLocation={userLocation} 
+                  destinationLocation={destinationLocation} 
+                />
+              )}
+              
               {/* Weather */}
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-xl font-bold mb-4">Prakiraan Cuaca</h2>
@@ -245,25 +285,25 @@ if (p.latitude && p.longitude) {
               
               {/* Map */}
               <div className="h-80 rounded-lg overflow-hidden">
-  {place && (
-    <Map 
-      center={{ 
-        lat: (place.latitude || (place.location && place.location.lat)) || -6.2088, 
-        lng: (place.longitude || (place.location && place.location.lng)) || 106.8456
-      }} 
-      zoom={15}
-      markers={[
-        {
-          position: {
-            lat: (place.latitude || (place.location && place.location.lat)) || -6.2088,
-            lng: (place.longitude || (place.location && place.location.lng)) || 106.8456
-          },
-          title: place.title || place.name || 'Lokasi'
-        }
-      ]}
-    />
-  )}
-</div>
+                {place && (
+                  <Map 
+                    center={{ 
+                      lat: (place.latitude || (place.location && place.location.lat)) || -6.2088, 
+                      lng: (place.longitude || (place.location && place.location.lng)) || 106.8456
+                    }} 
+                    zoom={15}
+                    markers={[
+                      {
+                        position: {
+                          lat: (place.latitude || (place.location && place.location.lat)) || -6.2088,
+                          lng: (place.longitude || (place.location && place.location.lng)) || 106.8456
+                        },
+                        title: place.title || place.name || 'Lokasi'
+                      }
+                    ]}
+                  />
+                )}
+              </div>
               
               {/* Reviews */}
               <div className="bg-white rounded-lg shadow-md p-6">
