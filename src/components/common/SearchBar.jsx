@@ -14,6 +14,13 @@ const SearchBar = ({ onSearch }) => {
     setIsLoading(true);
     setErrorMessage('');
     
+    // First, validate input
+    if (location !== 'current' && !location.trim()) {
+      setErrorMessage('Mohon masukkan nama lokasi atau pilih "Lokasi Saya"');
+      setIsLoading(false);
+      return;
+    }
+    
     // Use current location if user selected "Lokasi Saya"
     if (location === 'current') {
       if (navigator.geolocation) {
@@ -48,7 +55,7 @@ const SearchBar = ({ onSearch }) => {
           // Options for getCurrentPosition
           { 
             enableHighAccuracy: true, 
-            timeout: 10000, 
+            timeout: 15000, // Increased timeout 
             maximumAge: 0 
           }
         );
@@ -59,9 +66,19 @@ const SearchBar = ({ onSearch }) => {
     } else {
       // Use location name entered by user
       try {
+        // Make the location more specific if it's not already
+        let searchLocation = location.trim();
+        if (!searchLocation.toLowerCase().includes('indonesia') && 
+            !searchLocation.match(/\d{5,}/) &&  // Exclude entries that look like coordinates or postal codes
+            searchLocation.split(',').length < 2) {  // Only append if it doesn't already have a region
+          searchLocation += ', Indonesia';
+        }
+        
+        console.log(`Searching for location: "${searchLocation}"`);
+        
         // Call geocoding API to convert location name to coordinates
         const response = await axios.get('/api/geocode', {
-          params: { address: location },
+          params: { address: searchLocation },
           timeout: 15000 // 15 second timeout
         });
         
@@ -86,7 +103,7 @@ const SearchBar = ({ onSearch }) => {
           const data = error.response.data;
           
           if (status === 404) {
-            errorMsg = 'Lokasi tidak ditemukan. Coba masukkan nama lokasi yang lebih spesifik.';
+            errorMsg = 'Lokasi tidak ditemukan. Coba masukkan nama lokasi yang lebih spesifik, misalnya "Jakarta, Indonesia".';
           } else if (status === 429) {
             errorMsg = 'Batas penggunaan API tercapai. Silakan coba lagi nanti.';
           } else if (status === 500 && data && data.message) {
@@ -113,6 +130,16 @@ const SearchBar = ({ onSearch }) => {
     setErrorMessage('');
   };
 
+  // Use this to validate the location input if needed
+  const validateLocationInput = (inputValue) => {
+    setLocation(inputValue);
+    
+    // Clear any previous error messages when user starts typing
+    if (errorMessage) {
+      setErrorMessage('');
+    }
+  };
+
   return (
     <div className="w-full">
       <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-2">
@@ -126,9 +153,9 @@ const SearchBar = ({ onSearch }) => {
           <input
             type="text"
             className="input-field py-3 pl-10 pr-20"
-            placeholder="Cari lokasi tujuan wisata..."
+            placeholder="Cari lokasi tujuan wisata (contoh: Bali, Indonesia)..."
             value={location === 'current' ? 'Lokasi Saya' : location}
-            onChange={(e) => setLocation(e.target.value)}
+            onChange={(e) => validateLocationInput(e.target.value)}
             required
           />
           <button
@@ -184,6 +211,11 @@ const SearchBar = ({ onSearch }) => {
           {errorMessage}
         </div>
       )}
+      
+      {/* Optional hint */}
+      <div className="mt-1 text-xs text-gray-500">
+        Tip: Masukkan nama lokasi spesifik seperti "Bandung, Jawa Barat" untuk hasil terbaik.
+      </div>
     </div>
   );
 };
