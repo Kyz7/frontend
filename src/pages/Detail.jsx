@@ -117,7 +117,6 @@ const Detail = () => {
         setWeather(response.data);
       } catch (apiError) {
         console.error('Error using API function:', apiError);
-        // Fallback to direct axios call if API function fails
         try {
           const response = await axios.get('/api/weather', {
             params: {
@@ -128,13 +127,12 @@ const Detail = () => {
           });
           setWeather(response.data);
         } catch (axiosError) {
-          throw axiosError; // Let this be caught by the outer catch
+          throw axiosError;
         }
       }
     } catch (err) {
       console.error('Error fetching weather:', err);
       
-      // Provide mock weather data as fallback
       const mockWeatherData = {
         hourly: {
           temperature_2m: Array(24).fill(0).map((_, i) => 25 + Math.random() * 5),
@@ -191,10 +189,8 @@ const Detail = () => {
     );
   }
 
-  // Process image URL based on available properties
   const imageUrl = place.serpapi_thumbnail || place.photo || place.thumbnail || 'https://via.placeholder.com/800x400?text=No+Image';
 
-  // Get destination location for flight estimation
   const destinationLocation = {
     lat: place.latitude || (place.location && place.location.lat) || -6.2088,
     lng: place.longitude || (place.location && place.location.lng) || 106.8456
