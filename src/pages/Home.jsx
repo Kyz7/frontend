@@ -185,7 +185,7 @@ const Home = () => {
         {/* Hero Section */}
         <section className="relative bg-blue-700 text-white">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-800 to-blue-600 opacity-90"></div>
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+          <div className="relative container mx-auto px-4 py-16 md:py-24">
             <div className="text-center">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">Temukan Destinasi Wisatamu</h1>
               <p className="text-xl mb-8 max-w-2xl mx-auto">Rencanakan perjalanan sempurna dengan informasi lengkap cuaca, harga, dan lokasi</p>
@@ -210,7 +210,7 @@ const Home = () => {
         {/* Weather Widget */}
         {weather && (
           <div className="relative -mt-16 z-10">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="container mx-auto px-4">
               <div className="flex justify-center">
                 <div className="w-full max-w-md">
                   <WeatherWidget weatherData={weather} />
@@ -222,7 +222,7 @@ const Home = () => {
         
         {/* Error Display */}
         {error && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+          <div className="container mx-auto px-4 mt-8">
             <div className="bg-red-100 text-red-700 p-4 rounded-lg shadow">
               <div className="flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 mr-2 flex-shrink-0">
@@ -235,46 +235,55 @@ const Home = () => {
         )}
         
         {/* Places Section */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <h2 className="text-2xl font-bold mb-8 text-center">Destinasi Wisata Populer</h2>
-          
-          {loading ? (
-            <div className="flex justify-center py-16">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
-          ) : places.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {places.map((place, index) => (
-                <Link key={place.place_id || index} to={`/detail/${place.place_id || index}`} state={{ place }}>
-                  <PlaceCard place={place} />
-                </Link>
-              ))}
-            </div>
-          ) : !error && (
-            <div className="text-center py-16 text-gray-500">
-              <p className="text-lg">Tidak ada destinasi wisata yang ditemukan.</p>
-              <p className="mt-2">Coba cari dengan kata kunci atau lokasi yang berbeda.</p>
-            </div>
-          )}
+        <section className="w-full py-12">
+          <div className="max-w-7xl mx-auto px-4">
+            <h2 className="text-2xl font-bold mb-8 text-center">Destinasi Wisata Populer</h2>
+            
+            {loading ? (
+              <div className="flex justify-center py-16">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              </div>
+            ) : places.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
+                {places.map((place, index) => (
+                  <Link key={place.place_id || index} to={`/detail/${place.place_id || index}`} state={{ place }}>
+                    <PlaceCard place={place} />
+                  </Link>
+                ))}
+              </div>
+            ) : !error && (
+              <div className="text-center py-16 text-gray-500">
+                <p className="text-lg">Tidak ada destinasi wisata yang ditemukan.</p>
+                <p className="mt-2">Coba cari dengan kata kunci atau lokasi yang berbeda.</p>
+              </div>
+            )}
+          </div>
         </section>
         
         {/* CTA Section */}
-        <section className="bg-gray-50 py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl font-bold mb-4">Sudah siap untuk berpetualang?</h2>
-            <p className="mb-8 text-gray-600 text-lg">Simpan rencana perjalananmu dan akses kapan saja</p>
+        <section className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 py-16 overflow-hidden">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white to-transparent transform rotate-12 scale-150"></div>
+            <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full opacity-5 transform translate-x-32 -translate-y-32"></div>
+            <div className="absolute bottom-0 left-0 w-80 h-80 bg-white rounded-full opacity-5 transform -translate-x-32 translate-y-32"></div>
+          </div>
+          
+          <div className="relative max-w-7xl mx-auto px-4 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">Sudah siap untuk berpetualang?</h2>
+            <p className="mb-8 text-blue-100 text-lg md:text-xl max-w-2xl mx-auto">Simpan rencana perjalananmu dan akses kapan saja</p>
             
             {!user ? (
               <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Link to="/login" className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                <Link to="/login" className="bg-white text-blue-700 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
                   Login
                 </Link>
-                <Link to="/register" className="bg-gray-200 text-gray-800 px-8 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
+                <Link to="/register" className="bg-blue-800 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-900 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 border-2 border-blue-600 hover:border-blue-500">
                   Daftar Akun Baru
                 </Link>
               </div>
             ) : (
-              <Link to="/itinerary" className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors inline-block">
+              <Link to="/itinerary" className="bg-white text-blue-700 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 inline-block">
                 Lihat Rencana Perjalananmu
               </Link>
             )}
