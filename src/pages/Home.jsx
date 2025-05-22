@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/layout/Navbar';
@@ -6,6 +6,7 @@ import Footer from '../components/layout/Footer';
 import PlaceCard from '../components/common/PlaceCard';
 import SearchBar from '../components/common/SearchBar';
 import WeatherWidget from '../components/common/WeatherWidget';
+import Pagination from '../components/common/Pagination';
 import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
@@ -16,6 +17,29 @@ const Home = () => {
   const [location, setLocation] = useState(null);
   const [searchCount, setSearchCount] = useState(0);
   const [weather, setWeather] = useState(null);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPreviousPage: false,
+    totalResults: 0,
+    resultsPerPage: 9
+  });
+  const [currentSearchParams, setCurrentSearchParams] = useState({
+    lat: null,
+    lng: null,
+    query: ''
+  });
+
+  // Scroll to results section when page changes
+  const scrollToResults = () => {
+    const resultsSection = document.getElementById('results-section');
+    if (resultsSection) {
+      resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 500, behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -28,42 +52,25 @@ const Home = () => {
       localStorage.removeItem('guestSearchCount');
     }
 
+    initializeLocation();
+  }, [user]);
+
+  const initializeLocation = () => {
     setLoading(true);
 
     navigator.geolocation.getCurrentPosition(
       position => {
-        setLocation({
+        const coords = {
           lat: position.coords.latitude,
           lng: position.coords.longitude
-        });
-        fetchWeather(position.coords.latitude, position.coords.longitude);
-        fetchNearbyPlaces(position.coords.latitude, position.coords.longitude);
+        };
+        setLocation(coords);
+        fetchWeather(coords.lat, coords.lng);
+        fetchNearbyPlaces(coords.lat, coords.lng, '', 1);
       },
       error => {
         console.error('Error getting location:', error);
-
-        let errorMsg = 'Tidak dapat mengakses lokasi Anda. ';
-        switch(error.code) {
-          case error.PERMISSION_DENIED:
-            errorMsg += 'Izin lokasi ditolak. Silakan aktifkan izin lokasi di browser Anda atau cari secara manual.';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMsg += 'Informasi lokasi tidak tersedia. Menggunakan lokasi default.';
-            break;
-          case error.TIMEOUT:
-            errorMsg += 'Permintaan lokasi timeout. Menggunakan lokasi default.';
-            break;
-          default:
-            errorMsg += 'Menggunakan lokasi default.';
-        }
-        
-        setError(errorMsg);
-
-        const defaultLat = -6.2088;
-        const defaultLng = 106.8456;
-        setLocation({ lat: defaultLat, lng: defaultLng });
-        fetchWeather(defaultLat, defaultLng);
-        fetchNearbyPlaces(defaultLat, defaultLng);
+        handleLocationError(error);
       },
       { 
         enableHighAccuracy: true, 
@@ -71,7 +78,31 @@ const Home = () => {
         maximumAge: 0 
       }
     );
-  }, [user]);
+  };
+
+  const handleLocationError = (error) => {
+    let errorMsg = 'Tidak dapat mengakses lokasi Anda. ';
+    switch(error.code) {
+      case error.PERMISSION_DENIED:
+        errorMsg += 'Izin lokasi ditolak. Silakan aktifkan izin lokasi di browser Anda atau cari secara manual.';
+        break;
+      case error.POSITION_UNAVAILABLE:
+        errorMsg += 'Informasi lokasi tidak tersedia. Menggunakan lokasi default.';
+        break;
+      case error.TIMEOUT:
+        errorMsg += 'Permintaan lokasi timeout. Menggunakan lokasi default.';
+        break;
+      default:
+        errorMsg += 'Menggunakan lokasi default.';
+    }
+    
+    setError(errorMsg);
+
+    const defaultCoords = { lat: -6.2088, lng: 106.8456 };
+    setLocation(defaultCoords);
+    fetchWeather(defaultCoords.lat, defaultCoords.lng);
+    fetchNearbyPlaces(defaultCoords.lat, defaultCoords.lng, '', 1);
+  };
 
   const fetchWeather = async (lat, lng) => {
     try {
@@ -90,8 +121,9 @@ const Home = () => {
     }
   };
 
-  const fetchNearbyPlaces = async (lat, lng, query = '') => {
-    if (!user && searchCount >= 2) {
+  const fetchNearbyPlaces = async (lat, lng, query = '', page = 1) => {
+    // Check guest search limit for new searches only
+    if (!user && searchCount >= 2 && page === 1) {
       setError('Anda telah mencapai batas pencarian. Silakan login untuk melanjutkan.');
       setLoading(false);
       return;
@@ -100,23 +132,29 @@ const Home = () => {
     setLoading(true);
     setError('');
 
+    // Update current search params
+    setCurrentSearchParams({ lat, lng, query });
+
     try {
       const response = await axios.get('/api/places', {
         params: {
           lat,
           lon: lng,
-          query
+          query,
+          page,
+          limit: 9
         },
         timeout: 15000
       });
 
-      if (!response.data || !response.data.places) {
+      if (!response.data) {
         throw new Error('Invalid response format from places API');
       }
 
-      let processedPlaces = [];
-      if (response.data.places && response.data.places.length > 0) {
-        processedPlaces = response.data.places.map(place => {
+      const { places: fetchedPlaces, pagination: paginationData } = response.data;
+
+      if (fetchedPlaces && fetchedPlaces.length > 0) {
+        const processedPlaces = fetchedPlaces.map(place => {
           const imageToUse = place.serpapi_thumbnail || place.thumbnail || place.photo;
           
           return {
@@ -127,42 +165,70 @@ const Home = () => {
         });
         
         setPlaces(processedPlaces);
+        setPagination(paginationData || {
+          currentPage: page,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
+          totalResults: processedPlaces.length,
+          resultsPerPage: 9
+        });
       } else {
         setPlaces([]);
+        setPagination({
+          currentPage: 1,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
+          totalResults: 0,
+          resultsPerPage: 9
+        });
         setError('Tidak ada destinasi wisata yang ditemukan di lokasi ini. Coba pencarian lain atau ubah lokasi.');
       }
 
-      if (!user) {
+      // Only increment search count for new searches (page 1)
+      if (page === 1 && !user) {
         const newCount = searchCount + 1;
         setSearchCount(newCount);
         localStorage.setItem('guestSearchCount', newCount.toString());
       }
     } catch (err) {
       console.error('Error fetching places:', err);
-      
-      let errorMsg = 'Gagal mendapatkan tempat wisata. ';
-      
-      if (err.response) {
-        if (err.response.status === 404) {
-          errorMsg += 'Tidak ada tempat wisata yang ditemukan di lokasi ini.';
-        } else if (err.response.status === 429) {
-          errorMsg += 'Batas penggunaan API tercapai. Silakan coba lagi nanti.';
-        } else if (err.response.status >= 500) {
-          errorMsg += 'Terjadi masalah dengan server. Silakan coba lagi nanti.';
-        } else if (err.response.data && err.response.data.message) {
-          errorMsg += err.response.data.message;
-        }
-      } else if (err.request) {
-        errorMsg += 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
-      } else if (err.code === 'ECONNABORTED') {
-        errorMsg += 'Permintaan timeout. Silakan coba lagi nanti.';
-      }
-      
-      setError(errorMsg);
-      setPlaces([]);
+      handleApiError(err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleApiError = (err) => {
+    let errorMsg = 'Gagal mendapatkan tempat wisata. ';
+    
+    if (err.response) {
+      if (err.response.status === 404) {
+        errorMsg += 'Tidak ada tempat wisata yang ditemukan di lokasi ini.';
+      } else if (err.response.status === 429) {
+        errorMsg += 'Batas penggunaan API tercapai. Silakan coba lagi nanti.';
+      } else if (err.response.status >= 500) {
+        errorMsg += 'Terjadi masalah dengan server. Silakan coba lagi nanti.';
+      } else if (err.response.data && err.response.data.message) {
+        errorMsg += err.response.data.message;
+      }
+    } else if (err.request) {
+      errorMsg += 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
+    } else if (err.code === 'ECONNABORTED') {
+      errorMsg += 'Permintaan timeout. Silakan coba lagi nanti.';
+    }
+    
+    setError(errorMsg);
+    setPlaces([]);
+    setPagination({
+      currentPage: 1,
+      totalPages: 1,
+      hasNextPage: false,
+      hasPreviousPage: false,
+      totalResults: 0,
+      resultsPerPage: 9
+    });
   };
 
   const handleSearch = (lat, lng, searchQuery = '') => {
@@ -171,8 +237,23 @@ const Home = () => {
       return;
     }
 
-    fetchNearbyPlaces(lat, lng, searchQuery);
+    fetchNearbyPlaces(lat, lng, searchQuery, 1);
   };
+
+  const handlePageChange = useCallback((newPage) => {
+    if (currentSearchParams.lat && currentSearchParams.lng) {
+      fetchNearbyPlaces(
+        currentSearchParams.lat, 
+        currentSearchParams.lng, 
+        currentSearchParams.query, 
+        newPage
+      );
+      // Scroll to results with a small delay to ensure content is loaded
+      setTimeout(() => {
+        scrollToResults();
+      }, 100);
+    }
+  }, [currentSearchParams, searchCount, user]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -232,34 +313,68 @@ const Home = () => {
         )}
         
         {/* Places Section */}
-        <section className="w-full py-12">
-  <div className="max-w-7xl mx-auto px-4">
-    <h2 className="text-2xl font-bold mb-8 text-center text-cyan-500">Destinasi Wisata Populer</h2>
-    
-    {loading ? (
-      <div className="flex justify-center py-16">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    ) : places.length > 0 ? (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-        {places.map((place, index) => (
-          <Link key={place.place_id || index} to={`/detail/${place.place_id || index}`} state={{ place }} className="block h-full">
-            <PlaceCard place={place} />
-          </Link>
-        ))}
-      </div>
-    ) : !error && (
-      <div className="text-center py-16 text-gray-500">
-        <p className="text-lg">Tidak ada destinasi wisata yang ditemukan.</p>
-        <p className="mt-2">Coba cari dengan kata kunci atau lokasi yang berbeda.</p>
-      </div>
-    )}
-  </div>
-</section>
+        <section id="results-section" className="w-full py-12">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-cyan-500 mb-2">
+                  {currentSearchParams.query ? `Hasil pencarian "${currentSearchParams.query}"` : 'Destinasi Wisata Populer'}
+                </h2>
+              </div>
+              
+              {pagination.totalResults > 0 && !loading && (
+                <div className="text-right">
+                  <p className="text-sm text-gray-600">
+                    Menampilkan <span className="font-semibold">{Math.min((pagination.currentPage - 1) * pagination.resultsPerPage + 1, pagination.totalResults)}</span> - <span className="font-semibold">{Math.min(pagination.currentPage * pagination.resultsPerPage, pagination.totalResults)}</span> dari{' '}
+                    <span className="font-semibold">{pagination.totalResults}</span> hasil
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Halaman {pagination.currentPage} dari {pagination.totalPages}
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+                <p className="text-gray-600">Mencari destinasi wisata...</p>
+              </div>
+            ) : places.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                  {places.map((place, index) => (
+                    <Link key={place.place_id || index} to={`/detail/${place.place_id || index}`} state={{ place }} className="block h-full">
+                      <PlaceCard place={place} />
+                    </Link>
+                  ))}
+                </div>
+                
+                {/* Pagination Component */}
+                <Pagination
+                  currentPage={pagination.currentPage}
+                  totalPages={pagination.totalPages}
+                  hasNextPage={pagination.hasNextPage}
+                  hasPreviousPage={pagination.hasPreviousPage}
+                  onPageChange={handlePageChange}
+                  loading={loading}
+                />
+              </>
+            ) : !error && (
+              <div className="text-center py-16 text-gray-500">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mx-auto mb-4 text-gray-300">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+                <p className="text-lg mb-2">Tidak ada destinasi wisata yang ditemukan</p>
+                <p className="text-sm">Coba cari dengan kata kunci atau lokasi yang berbeda</p>
+              </div>
+            )}
+          </div>
+        </section>
         
         {/* CTA Section */}
         <section className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 py-16 overflow-hidden">
-          {/* Background Pattern */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white to-transparent transform rotate-12 scale-150"></div>
             <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full opacity-5 transform translate-x-32 -translate-y-32"></div>
