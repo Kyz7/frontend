@@ -20,7 +20,7 @@ const PlaceCard = ({ place }) => {
   const imageSource = serpapi_thumbnail || thumbnail || photo || image || defaultImage;
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 w-full max-w-sm mx-auto h-full flex flex-col">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 w-full h-full flex flex-col">
       <div className="relative">
         <img
           src={imageSource}
@@ -29,7 +29,6 @@ const PlaceCard = ({ place }) => {
         />
         {rating && (
           <div className="absolute top-2 right-2 bg-yellow-400 text-gray-800 py-1 px-2 rounded-lg flex items-center">
-            {/* icon bintang */}
             <span className="font-medium text-sm">{rating}</span>
           </div>
         )}

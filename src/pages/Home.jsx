@@ -7,6 +7,7 @@ import PlaceCard from '../components/common/PlaceCard';
 import SearchBar from '../components/common/SearchBar';
 import WeatherWidget from '../components/common/WeatherWidget';
 import Pagination from '../components/common/Pagination';
+import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
@@ -32,14 +33,18 @@ const Home = () => {
   });
 
   // Scroll to results section when page changes
-  const scrollToResults = () => {
+  const scrollToResults = useCallback(() => {
     const resultsSection = document.getElementById('results-section');
     if (resultsSection) {
-      resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      resultsSection.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start',
+        inline: 'nearest'
+      });
     } else {
       window.scrollTo({ top: 500, behavior: 'smooth' });
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -231,6 +236,7 @@ const Home = () => {
     });
   };
 
+  // Define handleSearch function
   const handleSearch = (lat, lng, searchQuery = '') => {
     if (!user && searchCount >= 2) {
       setError('Anda telah mencapai batas pencarian. Silakan login untuk melanjutkan.');
@@ -240,29 +246,30 @@ const Home = () => {
     fetchNearbyPlaces(lat, lng, searchQuery, 1);
   };
 
+  // Handle page change with improved UX
   const handlePageChange = useCallback((newPage) => {
-    if (currentSearchParams.lat && currentSearchParams.lng) {
+    if (currentSearchParams.lat && currentSearchParams.lng && newPage !== pagination.currentPage) {
+      // Scroll to top of results immediately for better UX
+      scrollToResults();
+      
+      // Then fetch new data
       fetchNearbyPlaces(
         currentSearchParams.lat, 
         currentSearchParams.lng, 
         currentSearchParams.query, 
         newPage
       );
-      // Scroll to results with a small delay to ensure content is loaded
-      setTimeout(() => {
-        scrollToResults();
-      }, 100);
     }
-  }, [currentSearchParams, searchCount, user]);
+  }, [currentSearchParams, pagination.currentPage, scrollToResults]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pt">
       <Navbar />
       
       <main className="flex-grow">
         {/* Hero Section */}
-        <section className="relative bg-blue-700 text-white">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-800 to-blue-600 opacity-90"></div>
+        <section className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 text-white">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 opacity-90 overflow-hidden"></div>
           <div className="relative container mx-auto px-4 py-16 md:py-24">
             <div className="text-center">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">Temukan Destinasi Wisatamu</h1>
@@ -314,7 +321,8 @@ const Home = () => {
         
         {/* Places Section */}
         <section id="results-section" className="w-full py-12">
-          <div className="max-w-7xl mx-auto px-4">
+          <div className="px-4">
+            {/* Results Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-cyan-500 mb-2">
@@ -322,7 +330,7 @@ const Home = () => {
                 </h2>
               </div>
               
-              {pagination.totalResults > 0 && !loading && (
+              {/* {pagination.totalResults > 0 && !loading && (
                 <div className="text-right">
                   <p className="text-sm text-gray-600">
                     Menampilkan <span className="font-semibold">{Math.min((pagination.currentPage - 1) * pagination.resultsPerPage + 1, pagination.totalResults)}</span> - <span className="font-semibold">{Math.min(pagination.currentPage * pagination.resultsPerPage, pagination.totalResults)}</span> dari{' '}
@@ -332,17 +340,24 @@ const Home = () => {
                     Halaman {pagination.currentPage} dari {pagination.totalPages}
                   </p>
                 </div>
-              )}
+              )} */}
             </div>
             
+            {/* Loading State */}
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-                <p className="text-gray-600">Mencari destinasi wisata...</p>
+              <div className="space-y-8">
+                <LoadingSkeleton count={9} />
+                <div className="flex justify-center">
+                  <div className="flex items-center space-x-2 text-sm text-gray-500">
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div>
+                    <span>Mencari destinasi wisata...</span>
+                  </div>
+                </div>
               </div>
             ) : places.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                {/* Places Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {places.map((place, index) => (
                     <Link key={place.place_id || index} to={`/detail/${place.place_id || index}`} state={{ place }} className="block h-full">
                       <PlaceCard place={place} />
@@ -354,10 +369,12 @@ const Home = () => {
                 <Pagination
                   currentPage={pagination.currentPage}
                   totalPages={pagination.totalPages}
-                  hasNextPage={pagination.hasNextPage}
-                  hasPreviousPage={pagination.hasPreviousPage}
                   onPageChange={handlePageChange}
                   loading={loading}
+                  showPageNumbers={true}
+                  showInfo={true}
+                  maxVisiblePages={5}
+                  className="mt-12"
                 />
               </>
             ) : !error && (

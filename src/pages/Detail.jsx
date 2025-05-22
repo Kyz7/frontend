@@ -1,4 +1,3 @@
-// Updated Detail.jsx with FlightEstimation component integration
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -45,7 +44,6 @@ const Detail = () => {
   }, []);
 
   useEffect(() => {
-    console.log('PLACE OBJECT:', location.state?.place);
     if (location.state?.place) {
       setPlace(location.state.place);
       setLoading(false);
@@ -79,7 +77,6 @@ const Detail = () => {
   const fetchPlaceDetails = async () => {
     setLoading(true);
     try {
-
       const dummyPlace = {
         title: 'Tempat Wisata ' + id,
         address: 'Jl. Contoh No. 123, Kota Wisata',
@@ -110,29 +107,10 @@ const Detail = () => {
   const fetchWeather = async (lat, lng) => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      
-      // Use the imported API function if available
-      try {
-        const response = await getWeather(lat, lng, today);
-        setWeather(response.data);
-      } catch (apiError) {
-        console.error('Error using API function:', apiError);
-        try {
-          const response = await axios.get('/api/weather', {
-            params: {
-              lat,
-              lon: lng,
-              date: today
-            }
-          });
-          setWeather(response.data);
-        } catch (axiosError) {
-          throw axiosError;
-        }
-      }
+      const response = await getWeather(lat, lng, today);
+      setWeather(response.data);
     } catch (err) {
       console.error('Error fetching weather:', err);
-      
       const mockWeatherData = {
         hourly: {
           temperature_2m: Array(24).fill(0).map((_, i) => 25 + Math.random() * 5),
@@ -155,7 +133,6 @@ const Detail = () => {
         console.log('Error sharing', error);
       });
     } else {
-      // Fallback untuk browser yang tidak mendukung Web Share API
       navigator.clipboard.writeText(window.location.href)
         .then(() => alert('Link berhasil disalin ke clipboard'))
         .catch(err => console.error('Gagal menyalin link:', err));
@@ -235,7 +212,7 @@ const Detail = () => {
                 
                 <button
                   onClick={handleShare}
-                  className="flex items-center bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors"
+                  className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />

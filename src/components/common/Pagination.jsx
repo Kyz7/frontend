@@ -97,10 +97,10 @@ const Pagination = ({
   return (
     <div className="flex flex-col items-center space-y-4 mt-12">
       {/* Page Info */}
-      <div className="text-sm text-gray-600 text-center">
+      {/* <div className="text-sm text-gray-600 text-center">
         Halaman <span className="font-semibold">{currentPage}</span> dari{' '}
         <span className="font-semibold">{totalPages}</span>
-      </div>
+      </div> */}
 
       {/* Pagination Controls */}
       <nav className="flex items-center space-x-2" aria-label="Pagination">

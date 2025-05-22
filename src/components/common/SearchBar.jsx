@@ -9,10 +9,9 @@ const SearchBar = ({ onSearch }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     setIsLoading(true);
     setErrorMessage('');
-    
+
     if (location !== 'current' && !location.trim()) {
       setErrorMessage('Mohon masukkan nama lokasi atau pilih "Lokasi Saya"');
       setIsLoading(false);
@@ -30,7 +29,6 @@ const SearchBar = ({ onSearch }) => {
           (error) => {
             console.error('Error getting location:', error);
             setIsLoading(false);
-
             let errorMsg = 'Tidak dapat mengakses lokasi Anda. ';
             switch(error.code) {
               case error.PERMISSION_DENIED:
@@ -45,7 +43,6 @@ const SearchBar = ({ onSearch }) => {
               default:
                 errorMsg += 'Silakan coba lagi atau masukkan nama lokasi.';
             }
-            
             setErrorMessage(errorMsg);
           },
           { 
@@ -59,9 +56,7 @@ const SearchBar = ({ onSearch }) => {
         setErrorMessage('Geolocation tidak didukung di browser Anda. Silakan masukkan nama lokasi secara manual.');
       }
     } else {
-
       try {
-
         let searchLocation = location.trim();
         if (!searchLocation.toLowerCase().includes('indonesia') && 
             !searchLocation.match(/\d{5,}/) && 
@@ -84,13 +79,10 @@ const SearchBar = ({ onSearch }) => {
         }
       } catch (error) {
         console.error('Geocoding error:', error);
-
         let errorMsg = 'Gagal mendapatkan koordinat lokasi. ';
         
         if (error.response) {
-
           console.log('Error response:', error.response.data);
-          
           const status = error.response.status;
           const data = error.response.data;
           
@@ -104,7 +96,6 @@ const SearchBar = ({ onSearch }) => {
             errorMsg = 'Masalah dengan server. Silakan coba lagi nanti.';
           }
         } else if (error.request) {
-
           errorMsg = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda dan coba lagi.';
         } else if (error.code === 'ECONNABORTED') {
           errorMsg = 'Permintaan timeout. Silakan coba lagi nanti.';
@@ -124,7 +115,6 @@ const SearchBar = ({ onSearch }) => {
 
   const validateLocationInput = (inputValue) => {
     setLocation(inputValue);
-
     if (errorMessage) {
       setErrorMessage('');
     }
@@ -142,7 +132,7 @@ const SearchBar = ({ onSearch }) => {
           </div>
           <input
             type="text"
-            className="w-full py-3 pl-10 pr-4 bg-white bg-opacity-90 backdrop-blur-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500"
+            className="w-full py-3 pl-10 pr-4 bg-white bg-opacity-90 backdrop-blur-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 text-blue-400"
             placeholder="Cari tujuan wisatamu"
             value={location === 'current' ? 'Lokasi Saya' : location}
             onChange={(e) => validateLocationInput(e.target.value)}
@@ -165,7 +155,7 @@ const SearchBar = ({ onSearch }) => {
           </div>
           <input
             type="text"
-            className="w-full py-3 pl-10 pr-4 bg-white bg-opacity-90 backdrop-blur-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500"
+            className="w-full py-3 pl-10 pr-4 bg-white bg-opacity-90 backdrop-blur-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 text-blue-400"
             placeholder="Apa yang ingin Anda cari? (contoh: tempat wisata, restoran)"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
