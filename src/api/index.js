@@ -38,6 +38,8 @@ export const reverseGeocode = (lat, lon) => api.get(`/api/geocode/reverse`, { pa
 export const savePlan = (planData) => api.post('/plans', planData);
 export const getUserPlans = () => api.get('/plans');
 
+export const deletePlan = (planId) => api.delete(`/plans/${planId}`);
+
 export const getWeather = (lat, lon, date) => 
   api.get(`/api/weather`, { params: { lat, lon, date } });
 
