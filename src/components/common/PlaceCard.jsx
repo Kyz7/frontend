@@ -20,7 +20,7 @@ const PlaceCard = ({ place }) => {
   const imageSource = serpapi_thumbnail || thumbnail || photo || image || defaultImage;
 
   return (
-    <div className="card h-full">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 w-full max-w-sm mx-auto h-full flex flex-col">
       <div className="relative">
         <img
           src={imageSource}
@@ -34,18 +34,17 @@ const PlaceCard = ({ place }) => {
           </div>
         )}
       </div>
-      <div className="p-4">
-        <h3 className="text-lg font-semibold mb-2 text-gray-800">{title || 'Unnamed Place'}</h3>
-        <p className="text-gray-500 text-sm mb-3">
+      <div className="p-4 flex-grow flex flex-col">
+        <h3 className="text-lg font-semibold mb-2 text-gray-800 line-clamp-2">{title || 'Unnamed Place'}</h3>
+        <p className="text-gray-500 text-sm mb-3 line-clamp-2">
           {address ? address : 'Alamat tidak tersedia'}
         </p>
         {description && (
-          <p className="text-gray-600 text-sm mb-3 line-clamp-2">{description}</p>
+          <p className="text-gray-600 text-sm mb-3 line-clamp-2 flex-grow">{description}</p>
         )}
       </div>
     </div>
   );
 };
-
 
 export default PlaceCard;

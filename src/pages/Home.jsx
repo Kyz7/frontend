@@ -132,7 +132,6 @@ const Home = () => {
         setError('Tidak ada destinasi wisata yang ditemukan di lokasi ini. Coba pencarian lain atau ubah lokasi.');
       }
 
-      // Increment search count for guest users only
       if (!user) {
         const newCount = searchCount + 1;
         setSearchCount(newCount);
@@ -144,7 +143,6 @@ const Home = () => {
       let errorMsg = 'Gagal mendapatkan tempat wisata. ';
       
       if (err.response) {
-        // The request was made and the server responded with a status code
         if (err.response.status === 404) {
           errorMsg += 'Tidak ada tempat wisata yang ditemukan di lokasi ini.';
         } else if (err.response.status === 429) {
@@ -168,7 +166,6 @@ const Home = () => {
   };
 
   const handleSearch = (lat, lng, searchQuery = '') => {
-    // Apply search limits only for non-logged in users
     if (!user && searchCount >= 2) {
       setError('Anda telah mencapai batas pencarian. Silakan login untuk melanjutkan.');
       return;
@@ -188,9 +185,9 @@ const Home = () => {
           <div className="relative container mx-auto px-4 py-16 md:py-24">
             <div className="text-center">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">Temukan Destinasi Wisatamu</h1>
-              <p className="text-xl mb-8 max-w-2xl mx-auto">Rencanakan perjalanan sempurna dengan informasi lengkap cuaca, harga, dan lokasi</p>
+              <p className="text-xl mb-8 w-full px-4">Rencanakan perjalanan sempurna dengan informasi lengkap cuaca, harga, dan lokasi</p>
               
-              <div className="max-w-4xl mx-auto">
+              <div className="w-full px-4">
                 <SearchBar onSearch={handleSearch} />
               </div>
               
@@ -236,29 +233,29 @@ const Home = () => {
         
         {/* Places Section */}
         <section className="w-full py-12">
-          <div className="max-w-7xl mx-auto px-4">
-            <h2 className="text-2xl font-bold mb-8 text-center">Destinasi Wisata Populer</h2>
-            
-            {loading ? (
-              <div className="flex justify-center py-16">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-              </div>
-            ) : places.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
-                {places.map((place, index) => (
-                  <Link key={place.place_id || index} to={`/detail/${place.place_id || index}`} state={{ place }}>
-                    <PlaceCard place={place} />
-                  </Link>
-                ))}
-              </div>
-            ) : !error && (
-              <div className="text-center py-16 text-gray-500">
-                <p className="text-lg">Tidak ada destinasi wisata yang ditemukan.</p>
-                <p className="mt-2">Coba cari dengan kata kunci atau lokasi yang berbeda.</p>
-              </div>
-            )}
-          </div>
-        </section>
+  <div className="max-w-7xl mx-auto px-4">
+    <h2 className="text-2xl font-bold mb-8 text-center text-cyan-500">Destinasi Wisata Populer</h2>
+    
+    {loading ? (
+      <div className="flex justify-center py-16">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    ) : places.length > 0 ? (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        {places.map((place, index) => (
+          <Link key={place.place_id || index} to={`/detail/${place.place_id || index}`} state={{ place }} className="block h-full">
+            <PlaceCard place={place} />
+          </Link>
+        ))}
+      </div>
+    ) : !error && (
+      <div className="text-center py-16 text-gray-500">
+        <p className="text-lg">Tidak ada destinasi wisata yang ditemukan.</p>
+        <p className="mt-2">Coba cari dengan kata kunci atau lokasi yang berbeda.</p>
+      </div>
+    )}
+  </div>
+</section>
         
         {/* CTA Section */}
         <section className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 py-16 overflow-hidden">
