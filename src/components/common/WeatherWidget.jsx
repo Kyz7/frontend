@@ -1,13 +1,12 @@
-
-
 import React from 'react';
 
 /**
  * 
  * @param {Object} props
  * @param {Object} props.weatherData 
+ * @param {string} props.locationName - Name of the location for weather display (from reverse geocoding)
  */
-const WeatherWidget = ({ weatherData }) => {
+const WeatherWidget = ({ weatherData, locationName }) => {
 
   if (!weatherData) {
     return (
@@ -19,8 +18,14 @@ const WeatherWidget = ({ weatherData }) => {
 
   let formattedData;
   
+  // Always prioritize locationName prop over API response location/timezone
+  const displayLocation = locationName || 'Lokasi saat ini';
+  
   if (weatherData.data && weatherData.data.formatted) {
-    formattedData = weatherData.data.formatted;
+    formattedData = {
+      ...weatherData.data.formatted,
+      location: displayLocation  // Override with reverse geocoded location
+    };
   } else if (weatherData.hourly) {
     const temps = weatherData.hourly.temperature_2m;
     const codes = weatherData.hourly.weathercode;
@@ -28,7 +33,7 @@ const WeatherWidget = ({ weatherData }) => {
     formattedData = {
       conditions: getConditionText(codes[12] || 0),
       date: new Date().toLocaleDateString('id-ID'),
-      location: 'Lokasi saat ini',
+      location: displayLocation,  // Use reverse geocoded location
       weathercode: codes[12] || 0,
       temperature: {
         current: temps[new Date().getHours()] || 25,
@@ -37,10 +42,11 @@ const WeatherWidget = ({ weatherData }) => {
       }
     };
   } else {
+    // Fallback data
     formattedData = {
       conditions: 'Cerah',
       date: new Date().toLocaleDateString('id-ID'),
-      location: 'Lokasi saat ini',
+      location: displayLocation,  // Use reverse geocoded location
       weathercode: 0,
       temperature: {
         current: 28,

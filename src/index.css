@@ -88,3 +88,53 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.leaflet-default-icon-path {
+  background-image: url('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png');
+}
+
+.custom-div-icon {
+  background: transparent;
+  border: none;
+}
+
+.emoji-marker {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+}
+
+.leaflet-popup-content {
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}
+
+.leaflet-control-zoom {
+  border-radius: 4px;
+}
+
+.leaflet-control-zoom a {
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .leaflet-control-container {
+    font-size: 14px;
+  }
+  
+  .leaflet-control-zoom a {
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+  }
+}

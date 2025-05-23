@@ -18,6 +18,7 @@ const Home = () => {
   const [location, setLocation] = useState(null);
   const [searchCount, setSearchCount] = useState(0);
   const [weather, setWeather] = useState(null);
+  const [currentLocationName, setCurrentLocationName] = useState('');
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -32,7 +33,83 @@ const Home = () => {
     query: ''
   });
 
-  // Scroll to results section when page changes
+  const getLocationName = async (lat, lng) => {
+    try {
+      const response = await axios.get(`https://api.opencagedata.com/geocode/v1/json`, {
+        params: {
+          q: `${lat},${lng}`,
+          key: process.env.REACT_APP_OPENCAGE_API_KEY || 'YOUR_OPENCAGE_API_KEY',
+          language: 'id',
+          pretty: 1,
+          no_annotations: 1
+        },
+        timeout: 5000
+      });
+
+      if (response.data && response.data.results && response.data.results.length > 0) {
+        const result = response.data.results[0];
+        const components = result.components;
+
+        let locationParts = [];
+        
+        if (components.city) {
+          locationParts.push(components.city);
+        } else if (components.town) {
+          locationParts.push(components.town);
+        } else if (components.village) {
+          locationParts.push(components.village);
+        }
+        
+        if (components.state) {
+          locationParts.push(components.state);
+        } else if (components.province) {
+          locationParts.push(components.province);
+        }
+        
+        if (components.country) {
+          locationParts.push(components.country);
+        }
+        
+        return locationParts.length > 0 ? locationParts.join(', ') : 'Lokasi tidak diketahui';
+      } else {
+        return 'Lokasi tidak diketahui';
+      }
+    } catch (error) {
+      console.error('Error getting location name:', error);
+      return 'Lokasi tidak diketahui';
+    }
+  };
+
+  const getLocationNameFallback = async (lat, lng) => {
+    try {
+      const response = await axios.get(`https://nominatim.openstreetmap.org/reverse`, {
+        params: {
+          lat,
+          lon: lng,
+          format: 'json',
+          'accept-language': 'id,en',
+          zoom: 10
+        },
+        timeout: 5000
+      });
+
+      if (response.data && response.data.display_name) {
+        const addressParts = response.data.display_name.split(', ');
+        return addressParts.slice(0, 3).join(', ');
+      } else {
+        return 'Lokasi tidak diketahui';
+      }
+    } catch (error) {
+      console.error('Error getting location name from fallback:', error);
+
+      try {
+        return `Lat: ${lat.toFixed(2)}, Lng: ${lng.toFixed(2)}`;
+      } catch (err) {
+        return 'Lokasi tidak diketahui';
+      }
+    }
+  };
+
   const scrollToResults = useCallback(() => {
     const resultsSection = document.getElementById('results-section');
     if (resultsSection) {
@@ -64,12 +141,16 @@ const Home = () => {
     setLoading(true);
 
     navigator.geolocation.getCurrentPosition(
-      position => {
+      async position => {
         const coords = {
           lat: position.coords.latitude,
           lng: position.coords.longitude
         };
         setLocation(coords);
+
+        const locationName = await getLocationNameFallback(coords.lat, coords.lng);
+        setCurrentLocationName(locationName);
+        
         fetchWeather(coords.lat, coords.lng);
         fetchNearbyPlaces(coords.lat, coords.lng, '', 1);
       },
@@ -85,7 +166,7 @@ const Home = () => {
     );
   };
 
-  const handleLocationError = (error) => {
+  const handleLocationError = async (error) => {
     let errorMsg = 'Tidak dapat mengakses lokasi Anda. ';
     switch(error.code) {
       case error.PERMISSION_DENIED:
@@ -105,6 +186,10 @@ const Home = () => {
 
     const defaultCoords = { lat: -6.2088, lng: 106.8456 };
     setLocation(defaultCoords);
+
+    const locationName = await getLocationNameFallback(defaultCoords.lat, defaultCoords.lng);
+    setCurrentLocationName(locationName);
+    
     fetchWeather(defaultCoords.lat, defaultCoords.lng);
     fetchNearbyPlaces(defaultCoords.lat, defaultCoords.lng, '', 1);
   };
@@ -120,6 +205,7 @@ const Home = () => {
         },
         timeout: 10000
       });
+      
       setWeather(response.data);
     } catch (err) {
       console.error('Error fetching weather:', err);
@@ -127,7 +213,6 @@ const Home = () => {
   };
 
   const fetchNearbyPlaces = async (lat, lng, query = '', page = 1) => {
-    // Check guest search limit for new searches only
     if (!user && searchCount >= 2 && page === 1) {
       setError('Anda telah mencapai batas pencarian. Silakan login untuk melanjutkan.');
       setLoading(false);
@@ -137,7 +222,6 @@ const Home = () => {
     setLoading(true);
     setError('');
 
-    // Update current search params
     setCurrentSearchParams({ lat, lng, query });
 
     try {
@@ -191,7 +275,6 @@ const Home = () => {
         setError('Tidak ada destinasi wisata yang ditemukan di lokasi ini. Coba pencarian lain atau ubah lokasi.');
       }
 
-      // Only increment search count for new searches (page 1)
       if (page === 1 && !user) {
         const newCount = searchCount + 1;
         setSearchCount(newCount);
@@ -236,23 +319,28 @@ const Home = () => {
     });
   };
 
-  // Define handleSearch function
-  const handleSearch = (lat, lng, searchQuery = '') => {
+  const handleSearch = async (lat, lng, searchQuery = '') => {
     if (!user && searchCount >= 2) {
       setError('Anda telah mencapai batas pencarian. Silakan login untuk melanjutkan.');
       return;
     }
 
+    setLocation({ lat, lng });
+
+    const locationName = await getLocationNameFallback(lat, lng);
+    setCurrentLocationName(locationName);
+
+    setWeather(null);
+    fetchWeather(lat, lng);
+    
     fetchNearbyPlaces(lat, lng, searchQuery, 1);
   };
 
-  // Handle page change with improved UX
   const handlePageChange = useCallback((newPage) => {
     if (currentSearchParams.lat && currentSearchParams.lng && newPage !== pagination.currentPage) {
-      // Scroll to top of results immediately for better UX
+
       scrollToResults();
-      
-      // Then fetch new data
+
       fetchNearbyPlaces(
         currentSearchParams.lat, 
         currentSearchParams.lng, 
@@ -298,7 +386,7 @@ const Home = () => {
             <div className="container mx-auto px-4">
               <div className="flex justify-center">
                 <div className="w-full max-w-md">
-                  <WeatherWidget weatherData={weather} />
+                  <WeatherWidget weatherData={weather} locationName={currentLocationName} />
                 </div>
               </div>
             </div>
@@ -329,18 +417,6 @@ const Home = () => {
                   {currentSearchParams.query ? `Hasil pencarian "${currentSearchParams.query}"` : 'Destinasi Wisata Populer'}
                 </h2>
               </div>
-              
-              {/* {pagination.totalResults > 0 && !loading && (
-                <div className="text-right">
-                  <p className="text-sm text-gray-600">
-                    Menampilkan <span className="font-semibold">{Math.min((pagination.currentPage - 1) * pagination.resultsPerPage + 1, pagination.totalResults)}</span> - <span className="font-semibold">{Math.min(pagination.currentPage * pagination.resultsPerPage, pagination.totalResults)}</span> dari{' '}
-                    <span className="font-semibold">{pagination.totalResults}</span> hasil
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Halaman {pagination.currentPage} dari {pagination.totalPages}
-                  </p>
-                </div>
-              )} */}
             </div>
             
             {/* Loading State */}

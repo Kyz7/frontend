@@ -1,6 +1,3 @@
-// Fix 1: Update Map.jsx to ensure Leaflet loads properly
-// src/components/common/Map.jsx
-
 import React, { useEffect, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
 
@@ -27,6 +24,28 @@ const Map = ({ center, zoom = 13, markers = [] }) => {
         console.error('Leaflet library not found');
         return;
       }
+
+      delete L.Icon.Default.prototype._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+      });
+
+      const customIcon = L.divIcon({
+        className: 'custom-div-icon',
+        html: `<div style="
+          background-color: #3B82F6; 
+          width: 25px; 
+          height: 25px; 
+          border-radius: 50% 50% 50% 0; 
+          border: 3px solid #ffffff; 
+          transform: rotate(-45deg);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        "></div>`,
+        iconSize: [25, 25],
+        iconAnchor: [12, 24]
+      });
       
       if (!mapInstanceRef.current) {
         try {
@@ -36,7 +55,8 @@ const Map = ({ center, zoom = 13, markers = [] }) => {
           );
 
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
           }).addTo(mapInstanceRef.current);
 
           setTimeout(() => {
@@ -61,11 +81,17 @@ const Map = ({ center, zoom = 13, markers = [] }) => {
 
         markers.forEach(marker => {
           const { position, title } = marker;
-          const newMarker = L.marker([position.lat, position.lng])
-            .addTo(mapInstanceRef.current)
-            .bindPopup(title || 'Lokasi');
-          
-          markersRef.current.push(newMarker);
+          try {
+            const newMarker = L.marker([position.lat, position.lng], {
+              icon: customIcon // Menggunakan ikon custom
+            })
+              .addTo(mapInstanceRef.current)
+              .bindPopup(title || 'Lokasi');
+            
+            markersRef.current.push(newMarker);
+          } catch (error) {
+            console.error('Error adding marker:', error);
+          }
         });
       }
     };
@@ -77,11 +103,16 @@ const Map = ({ center, zoom = 13, markers = [] }) => {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
+      markersRef.current = [];
     };
   }, [center, zoom, markers]);
 
   return (
-    <div ref={mapRef} className="h-full w-full" />
+    <div 
+      ref={mapRef} 
+      className="h-full w-full"
+      style={{ minHeight: '300px' }}
+    />
   );
 };
 
