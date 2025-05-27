@@ -75,7 +75,7 @@ const Home = () => {
         return 'Lokasi tidak diketahui';
       }
     } catch (error) {
-      console.error('Error getting location name:', error);
+      // console.error('Error getting location name:', error);
       return 'Lokasi tidak diketahui';
     }
   };
@@ -100,7 +100,7 @@ const Home = () => {
         return 'Lokasi tidak diketahui';
       }
     } catch (error) {
-      console.error('Error getting location name from fallback:', error);
+      // console.error('Error getting location name from fallback:', error);
 
       try {
         return `Lat: ${lat.toFixed(2)}, Lng: ${lng.toFixed(2)}`;
@@ -155,7 +155,7 @@ const Home = () => {
         fetchNearbyPlaces(coords.lat, coords.lng, '', 1);
       },
       error => {
-        console.error('Error getting location:', error);
+        // console.error('Error getting location:', error);
         handleLocationError(error);
       },
       { 
@@ -208,7 +208,7 @@ const Home = () => {
       
       setWeather(response.data);
     } catch (err) {
-      console.error('Error fetching weather:', err);
+      // console.error('Error fetching weather:', err);
     }
   };
 
@@ -281,7 +281,7 @@ const Home = () => {
         localStorage.setItem('guestSearchCount', newCount.toString());
       }
     } catch (err) {
-      console.error('Error fetching places:', err);
+      // console.error('Error fetching places:', err);
       handleApiError(err);
     } finally {
       setLoading(false);

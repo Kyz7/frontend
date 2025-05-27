@@ -6,6 +6,7 @@ const FlightEstimation = ({ userLocation, destinationLocation }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showFlightOption, setShowFlightOption] = useState(false);
+  
 
   // Haversine formula untuk menghitung jarak antara dua koordinat
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -92,7 +93,7 @@ const FlightEstimation = ({ userLocation, destinationLocation }) => {
                        (destinationLocation.location && destinationLocation.location.lat);
         const destLng = destinationLocation.lng || destinationLocation.longitude ||
                        (destinationLocation.location && destinationLocation.location.lng);
-        
+                       console.log('Destination Location:', { destLat, destLng });
         if (!userLat || !userLng || !destLat || !destLng) {
           console.error('Missing coordinate data:', { userLat, userLng, destLat, destLng });
           return;
@@ -109,7 +110,7 @@ const FlightEstimation = ({ userLocation, destinationLocation }) => {
           const destAirport = findNearestAirport(destLat, destLng);
           
           console.log('Nearest airports:', { originAirport, destAirport });
-          
+
           // Pastikan bandara asal dan tujuan berbeda
           if (originAirport && destAirport && originAirport.code !== destAirport.code) {
             await fetchFlightEstimation(originAirport.code, destAirport.code, originAirport, destAirport);
@@ -134,6 +135,7 @@ const FlightEstimation = ({ userLocation, destinationLocation }) => {
   const fetchFlightEstimation = async (fromCode, toCode, originAirport, destAirport) => {
     setLoading(true);
     setError('');
+    
     
     try {
       console.log(`Fetching flight data from ${fromCode} to ${toCode}`);
@@ -265,6 +267,7 @@ const FlightEstimation = ({ userLocation, destinationLocation }) => {
           <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg mb-6">
             <div className="flex justify-between items-start">
               <div>
+                
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">
                   {flightData.originAirport?.city} → {flightData.destinationAirport?.city}
                 </h3>

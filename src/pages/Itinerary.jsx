@@ -25,7 +25,7 @@ const Itinerary = () => {
         setPlans(response.data.plans);
       }
     } catch (error) {
-      console.error('Error fetching plans:', error);
+      // console.error('Error fetching plans:', error);
       setError('Gagal memuat rencana perjalanan Anda');
     } finally {
       setLoading(false);
@@ -42,7 +42,7 @@ const Itinerary = () => {
       await deletePlan(planId);
       setPlans(plans.filter(plan => plan._id !== planId));
     } catch (error) {
-      console.error('Error deleting plan:', error);
+      // console.error('Error deleting plan:', error);
       setError('Gagal menghapus rencana perjalanan');
     } finally {
       setDeleteLoading(null);

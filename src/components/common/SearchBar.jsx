@@ -27,7 +27,7 @@ const SearchBar = ({ onSearch }) => {
             setIsLoading(false);
           },
           (error) => {
-            console.error('Error getting location:', error);
+            //console.error('Error getting location:', error);
             setIsLoading(false);
             let errorMsg = 'Tidak dapat mengakses lokasi Anda. ';
             switch(error.code) {
@@ -64,7 +64,7 @@ const SearchBar = ({ onSearch }) => {
           searchLocation += ', Indonesia';
         }
         
-        console.log(`Searching for location: "${searchLocation}"`);
+        //console.log(`Searching for location: "${searchLocation}"`);
 
         const response = await axios.get('/api/geocode', {
           params: { address: searchLocation },
@@ -78,11 +78,11 @@ const SearchBar = ({ onSearch }) => {
           setErrorMessage('Lokasi tidak ditemukan. Silakan coba dengan nama lokasi yang lebih spesifik.');
         }
       } catch (error) {
-        console.error('Geocoding error:', error);
+        //console.error('Geocoding error:', error);
         let errorMsg = 'Gagal mendapatkan koordinat lokasi. ';
         
         if (error.response) {
-          console.log('Error response:', error.response.data);
+          //console.log('Error response:', error.response.data);
           const status = error.response.status;
           const data = error.response.data;
           
