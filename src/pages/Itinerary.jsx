@@ -35,6 +35,16 @@ const Itinerary = () => {
         }
       }
       
+      // Debug: Log each plan's dateRange structure
+      plansData.forEach((plan, index) => {
+        console.log(`Plan ${index}:`, {
+          id: plan.id || plan._id,
+          placeName: typeof plan.place === 'string' ? JSON.parse(plan.place)?.name : plan.place?.name,
+          dateRange: plan.dateRange,
+          dateRangeType: typeof plan.dateRange
+        });
+      });
+      
       setPlans(plansData);
     } catch (error) {
       console.error('Error fetching plans:', error);
@@ -66,19 +76,81 @@ const Itinerary = () => {
     }
   };
 
+  // Improved function to safely parse dateRange data
+  const parseDateRange = (dateRange) => {
+    if (!dateRange) {
+      console.log('DateRange is null or undefined');
+      return null;
+    }
+    
+    try {
+      console.log('Parsing dateRange:', dateRange, 'Type:', typeof dateRange);
+      
+      // If it's a JSON string (which seems to be your case), parse it first
+      if (typeof dateRange === 'string') {
+        console.log('DateRange is string, parsing JSON...');
+        const parsed = JSON.parse(dateRange);
+        console.log('Parsed dateRange:', parsed);
+        
+        if (parsed && parsed.from && parsed.to) {
+          const fromDate = new Date(parsed.from);
+          const toDate = new Date(parsed.to);
+          
+          console.log('Converted dates - From:', fromDate, 'To:', toDate);
+          
+          return {
+            from: fromDate,
+            to: toDate
+          };
+        }
+      }
+      
+      // If it's already an object with from/to properties
+      if (typeof dateRange === 'object' && dateRange.from && dateRange.to) {
+        console.log('DateRange is object, converting dates...');
+        return {
+          from: new Date(dateRange.from),
+          to: new Date(dateRange.to)
+        };
+      }
+      
+      console.log('DateRange format not recognized');
+      
+    } catch (error) {
+      console.error('Error parsing dateRange:', error, 'Original data:', dateRange);
+    }
+    
+    return null;
+  };
+
   const formatDateRange = (from, to) => {
+    if (!from || !to) return 'Tanggal tidak tersedia';
+    
     const fromDate = new Date(from);
     const toDate = new Date(to);
+    
+    // Check if dates are valid
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+      return 'Tanggal tidak valid';
+    }
     
     const options = { day: 'numeric', month: 'long', year: 'numeric' };
     return `${fromDate.toLocaleDateString('id-ID', options)} - ${toDate.toLocaleDateString('id-ID', options)}`;
   };
 
   const calculateDuration = (from, to) => {
+    if (!from || !to) return 0;
+    
     const fromDate = new Date(from);
     const toDate = new Date(to);
+    
+    // Check if dates are valid
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+      return 0;
+    }
+    
     const duration = (toDate - fromDate) / (1000 * 60 * 60 * 24) + 1;
-    return Math.round(duration);
+    return Math.max(1, Math.round(duration)); // Ensure minimum 1 day
   };
 
   // Helper function to get plan ID (handles both MySQL id and MongoDB _id)
@@ -152,19 +224,8 @@ const Itinerary = () => {
                   }
                 }
                 
-                // Parse dateRange if it's stored as JSON string
-                let dateRangeData = plan.dateRange;
-                if (typeof plan.dateRange === 'string') {
-                  try {
-                    dateRangeData = JSON.parse(plan.dateRange);
-                  } catch (error) {
-                    console.error('Error parsing dateRange data:', error);
-                    dateRangeData = {};
-                  }
-                } else if (!plan.dateRange) {
-                  // Handle case where dateRange might be null/undefined
-                  dateRangeData = {};
-                }
+                // Use improved dateRange parsing
+                const dateRangeData = parseDateRange(plan.dateRange);
                 
                 // Parse flight data if it's stored as JSON string
                 let flightData = plan.flight;
@@ -180,11 +241,15 @@ const Itinerary = () => {
                 const placeName = placeData?.name || 'Tempat Wisata';
                 const placeAddress = placeData?.address || '';
                 const placePhoto = placeData?.photo || "https://via.placeholder.com/800x400?text=No+Image";
-                const dateFrom = dateRangeData?.from;
-                const dateTo = dateRangeData?.to;
                 const estimatedCost = plan.estimatedCost || 0;
                 const flightOrigin = flightData?.origin;
                 const flightDestination = flightData?.destination;
+                
+                // Extract dates
+                const dateFrom = dateRangeData?.from;
+                const dateTo = dateRangeData?.to;
+                const duration = dateRangeData ? calculateDuration(dateFrom, dateTo) : 0;
+                const dateRangeText = dateRangeData ? formatDateRange(dateFrom, dateTo) : 'Tanggal tidak tersedia';
 
                 return (
                   <div key={planId} className="bg-white rounded-lg shadow-md overflow-hidden transition-transform transform hover:scale-105">
@@ -201,30 +266,41 @@ const Itinerary = () => {
                     </div>
                     
                     <div className="p-4">
-                      {dateFrom && dateTo && (
-                        <div className="flex items-center mb-3">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <span className="text-gray-600">{formatDateRange(dateFrom, dateTo)}</span>
-                        </div>
-                      )}
+                      {/* Date Range Display */}
+                      <div className="flex items-center mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-gray-600 text-sm">{dateRangeText}</span>
+                      </div>
                       
-                      {dateFrom && dateTo && (
+                      {/* Duration Display */}
+                      {duration > 0 && (
                         <div className="flex items-center mb-3">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span className="text-gray-600">{calculateDuration(dateFrom, dateTo)} hari</span>
+                          <span className="text-gray-600 text-sm">{duration} hari</span>
                         </div>
                       )}
                       
+                      {/* Flight Information */}
                       {(flightOrigin && flightDestination) && (
                         <div className="flex items-center mb-3">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                           </svg>
-                          <span className="text-gray-600">Penerbangan: {flightOrigin} - {flightDestination}</span>
+                          <span className="text-gray-600 text-sm">Penerbangan: {flightOrigin} - {flightDestination}</span>
+                        </div>
+                      )}
+                      
+                      {/* Weather Info */}
+                      {plan.weather && (
+                        <div className="flex items-center mb-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                          </svg>
+                          <span className="text-gray-600 text-sm">Cuaca: {plan.weather}</span>
                         </div>
                       )}
                       
