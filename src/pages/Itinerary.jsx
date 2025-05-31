@@ -20,12 +20,24 @@ const Itinerary = () => {
   const fetchUserPlans = async () => {
     setLoading(true);
     try {
-      const response = await getUserPlans(); // Correctly calling the function
-      if (response.data && response.data.plans) {
-        setPlans(response.data.plans);
+      const response = await getUserPlans();
+      console.log('API Response:', response.data); // Debug log
+      
+      // Handle different possible response structures
+      let plansData = [];
+      if (response.data) {
+        if (response.data.plans) {
+          plansData = response.data.plans;
+        } else if (Array.isArray(response.data)) {
+          plansData = response.data;
+        } else if (response.data.data) {
+          plansData = response.data.data;
+        }
       }
+      
+      setPlans(plansData);
     } catch (error) {
-      // console.error('Error fetching plans:', error);
+      console.error('Error fetching plans:', error);
       setError('Gagal memuat rencana perjalanan Anda');
     } finally {
       setLoading(false);
@@ -40,9 +52,14 @@ const Itinerary = () => {
     setDeleteLoading(planId);
     try {
       await deletePlan(planId);
-      setPlans(plans.filter(plan => plan._id !== planId));
+      // Update plans array by filtering out the deleted plan
+      // Use both id and _id for compatibility (MySQL vs MongoDB)
+      setPlans(plans.filter(plan => {
+        const currentPlanId = plan.id || plan._id;
+        return currentPlanId !== planId;
+      }));
     } catch (error) {
-      // console.error('Error deleting plan:', error);
+      console.error('Error deleting plan:', error);
       setError('Gagal menghapus rencana perjalanan');
     } finally {
       setDeleteLoading(null);
@@ -62,6 +79,18 @@ const Itinerary = () => {
     const toDate = new Date(to);
     const duration = (toDate - fromDate) / (1000 * 60 * 60 * 24) + 1;
     return Math.round(duration);
+  };
+
+  // Helper function to get plan ID (handles both MySQL id and MongoDB _id)
+  const getPlanId = (plan) => {
+    return plan.id || plan._id;
+  };
+
+  // Helper function to safely access nested properties
+  const safeGet = (obj, path, defaultValue = '') => {
+    return path.split('.').reduce((current, key) => {
+      return current && current[key] !== undefined ? current[key] : defaultValue;
+    }, obj);
   };
 
   if (loading) {
@@ -109,81 +138,133 @@ const Itinerary = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {plans.map((plan) => (
-                <div key={plan._id} className="bg-white rounded-lg shadow-md overflow-hidden transition-transform transform hover:scale-105">
-                  <div className="h-48 relative">
-                    <img 
-                      src={plan.place.photo || "https://via.placeholder.com/800x400?text=No+Image"} 
-                      alt={plan.place.name} 
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
-                      <h2 className="text-xl font-bold text-white">{plan.place.name}</h2>
-                      <p className="text-white text-opacity-90 text-sm">{plan.place.address}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="p-4">
-                    <div className="flex items-center mb-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-gray-600">{formatDateRange(plan.dateRange.from, plan.dateRange.to)}</span>
-                    </div>
-                    
-                    <div className="flex items-center mb-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="text-gray-600">{calculateDuration(plan.dateRange.from, plan.dateRange.to)} hari</span>
-                    </div>
-                    
-                    {plan.flight && (
-                      <div className="flex items-center mb-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                        </svg>
-                        <span className="text-gray-600">Penerbangan: {plan.flight.origin} - {plan.flight.destination}</span>
-                      </div>
-                    )}
-                    
-                    <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
-                      <div>
-                        <span className="block text-sm text-gray-500">Estimasi Biaya</span>
-                        <span className="text-xl font-bold text-blue-600">{formatCurrency(plan.estimatedCost)}</span>
-                      </div>
-                      
-                      <button 
-  onClick={() => handleDelete(plan._id)}
-  disabled={deleteLoading === plan._id}
-  className={`px-3 py-1 text-white rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 ${
-    deleteLoading === plan._id 
-      ? 'bg-red-300 cursor-not-allowed' 
-      : 'bg-red-600 hover:bg-red-700'
-  }`}
->
-  {deleteLoading === plan._id ? (
-    <span className="flex items-center">
-      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      Menghapus
-    </span>
-  ) : (
-    <span className="flex items-center">
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-      </svg>
-      Hapus
-    </span>
-  )}
-</button>
+              {plans.map((plan) => {
+                const planId = getPlanId(plan);
+                
+                // Parse place data if it's stored as JSON string
+                let placeData = plan.place;
+                if (typeof plan.place === 'string') {
+                  try {
+                    placeData = JSON.parse(plan.place);
+                  } catch (error) {
+                    console.error('Error parsing place data:', error);
+                    placeData = {};
+                  }
+                }
+                
+                // Parse dateRange if it's stored as JSON string
+                let dateRangeData = plan.dateRange;
+                if (typeof plan.dateRange === 'string') {
+                  try {
+                    dateRangeData = JSON.parse(plan.dateRange);
+                  } catch (error) {
+                    console.error('Error parsing dateRange data:', error);
+                    dateRangeData = {};
+                  }
+                } else if (!plan.dateRange) {
+                  // Handle case where dateRange might be null/undefined
+                  dateRangeData = {};
+                }
+                
+                // Parse flight data if it's stored as JSON string
+                let flightData = plan.flight;
+                if (typeof plan.flight === 'string') {
+                  try {
+                    flightData = JSON.parse(plan.flight);
+                  } catch (error) {
+                    console.error('Error parsing flight data:', error);
+                    flightData = {};
+                  }
+                }
+                
+                const placeName = placeData?.name || 'Tempat Wisata';
+                const placeAddress = placeData?.address || '';
+                const placePhoto = placeData?.photo || "https://via.placeholder.com/800x400?text=No+Image";
+                const dateFrom = dateRangeData?.from;
+                const dateTo = dateRangeData?.to;
+                const estimatedCost = plan.estimatedCost || 0;
+                const flightOrigin = flightData?.origin;
+                const flightDestination = flightData?.destination;
 
+                return (
+                  <div key={planId} className="bg-white rounded-lg shadow-md overflow-hidden transition-transform transform hover:scale-105">
+                    <div className="h-48 relative">
+                      <img 
+                        src={placePhoto} 
+                        alt={placeName} 
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                        <h2 className="text-xl font-bold text-white">{placeName}</h2>
+                        <p className="text-white text-opacity-90 text-sm">{placeAddress}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4">
+                      {dateFrom && dateTo && (
+                        <div className="flex items-center mb-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span className="text-gray-600">{formatDateRange(dateFrom, dateTo)}</span>
+                        </div>
+                      )}
+                      
+                      {dateFrom && dateTo && (
+                        <div className="flex items-center mb-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="text-gray-600">{calculateDuration(dateFrom, dateTo)} hari</span>
+                        </div>
+                      )}
+                      
+                      {(flightOrigin && flightDestination) && (
+                        <div className="flex items-center mb-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                          </svg>
+                          <span className="text-gray-600">Penerbangan: {flightOrigin} - {flightDestination}</span>
+                        </div>
+                      )}
+                      
+                      <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
+                        <div>
+                          <span className="block text-sm text-gray-500">Estimasi Biaya</span>
+                          <span className="text-xl font-bold text-blue-600">{formatCurrency(estimatedCost)}</span>
+                        </div>
+                        
+                        <button 
+                          onClick={() => handleDelete(planId)}
+                          disabled={deleteLoading === planId}
+                          className={`px-3 py-1 text-white rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                            deleteLoading === planId 
+                              ? 'bg-red-300 cursor-not-allowed' 
+                              : 'bg-red-600 hover:bg-red-700'
+                          }`}
+                        >
+                          {deleteLoading === planId ? (
+                            <span className="flex items-center">
+                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Menghapus
+                            </span>
+                          ) : (
+                            <span className="flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Hapus
+                            </span>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

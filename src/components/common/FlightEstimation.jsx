@@ -82,7 +82,7 @@ const FlightEstimation = ({ userLocation, destinationLocation }) => {
   useEffect(() => {
     const checkFlightNeeded = async () => {
       if (!userLocation || !destinationLocation) {
-        console.log('Missing location data');
+        //console.log('Missing location data');
         return;
       }
       
@@ -93,38 +93,36 @@ const FlightEstimation = ({ userLocation, destinationLocation }) => {
                        (destinationLocation.location && destinationLocation.location.lat);
         const destLng = destinationLocation.lng || destinationLocation.longitude ||
                        (destinationLocation.location && destinationLocation.location.lng);
-                       console.log('Destination Location:', { destLat, destLng });
+                       //console.log('Destination Location:', { destLat, destLng });
         if (!userLat || !userLng || !destLat || !destLng) {
-          console.error('Missing coordinate data:', { userLat, userLng, destLat, destLng });
+          // console.error('Missing coordinate data:', { userLat, userLng, destLat, destLng });
           return;
         }
 
         const distance = calculateDistance(userLat, userLng, destLat, destLng);
-        console.log(`Distance calculated: ${distance.toFixed(2)} km`);
+       // console.log(`Distance calculated: ${distance.toFixed(2)} km`);
         
-        // Hanya tampilkan opsi penerbangan jika jarak > 500km (antar pulau atau jarak sangat jauh)
         if (distance > 500) {
           setShowFlightOption(true);
 
           const originAirport = findNearestAirport(userLat, userLng);
           const destAirport = findNearestAirport(destLat, destLng);
           
-          console.log('Nearest airports:', { originAirport, destAirport });
+          //console.log('Nearest airports:', { originAirport, destAirport });
 
-          // Pastikan bandara asal dan tujuan berbeda
           if (originAirport && destAirport && originAirport.code !== destAirport.code) {
             await fetchFlightEstimation(originAirport.code, destAirport.code, originAirport, destAirport);
           } else {
-            console.log('Same airport or missing airport data, hiding flight option');
+            //console.log('Same airport or missing airport data, hiding flight option');
             setShowFlightOption(false);
           }
         } else {
-          console.log('Distance too short for flight, hiding flight option');
+          //console.log('Distance too short for flight, hiding flight option');
           setShowFlightOption(false);
           setFlightData(null);
         }
       } catch (err) {
-        console.error('Error checking flight needed:', err);
+        //console.error('Error checking flight needed:', err);
         setError('Failed to check flight options');
       }
     };
@@ -138,12 +136,12 @@ const FlightEstimation = ({ userLocation, destinationLocation }) => {
     
     
     try {
-      console.log(`Fetching flight data from ${fromCode} to ${toCode}`);
+      //console.log(`Fetching flight data from ${fromCode} to ${toCode}`);
       
       // Gunakan API endpoint yang sudah ada
       const response = await getFlightEstimate(fromCode, toCode);
       
-      console.log('Flight API response:', response.data);
+      //console.log('Flight API response:', response.data);
       
       if (response.data && response.data.flights && response.data.flights.length > 0) {
         // Hitung estimasi biaya berdasarkan jarak dan tipe rute
@@ -163,13 +161,13 @@ const FlightEstimation = ({ userLocation, destinationLocation }) => {
         };
         
         setFlightData(flightEstimationData);
-        console.log('Flight data set successfully:', flightEstimationData);
+        //console.log('Flight data set successfully:', flightEstimationData);
       } else {
-        console.log('No flights found in API response, using mock data');
+        //console.log('No flights found in API response, using mock data');
         throw new Error('No flights found');
       }
     } catch (err) {
-      console.error('Error fetching flight data:', err);
+      //console.error('Error fetching flight data:', err);
       
       // Fallback ke data mock jika API gagal
       const distance = calculateDistance(originAirport.lat, originAirport.lng, destAirport.lat, destAirport.lng);

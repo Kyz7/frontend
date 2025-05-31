@@ -33,7 +33,7 @@ const Detail = () => {
           });
         },
         (error) => {
-          console.error('Error getting user location:', error);
+          // console.error('Error getting user location:', error);
           setUserLocation({ lat: -6.2088, lng: 106.8456 });
         }
       );
@@ -97,7 +97,7 @@ const Detail = () => {
       setPlace(dummyPlace);
       fetchWeather(dummyPlace.location.lat, dummyPlace.location.lng);
     } catch (err) {
-      console.error('Error fetching place details:', err);
+     // console.error('Error fetching place details:', err);
       setError('Gagal mendapatkan detail tempat wisata');
     } finally {
       setLoading(false);
@@ -110,7 +110,7 @@ const Detail = () => {
       const response = await getWeather(lat, lng, today);
       setWeather(response.data);
     } catch (err) {
-      console.error('Error fetching weather:', err);
+      // console.error('Error fetching weather:', err);
       const mockWeatherData = {
         hourly: {
           temperature_2m: Array(24).fill(0).map((_, i) => 25 + Math.random() * 5),
@@ -128,9 +128,9 @@ const Detail = () => {
         text: `Lihat detail tempat wisata ${place.title}`,
         url: window.location.href
       }).then(() => {
-        console.log('Berhasil membagikan');
+        // console.log('Berhasil membagikan');
       }).catch((error) => {
-        console.log('Error sharing', error);
+        // console.log('Error sharing', error);
       });
     } else {
       navigator.clipboard.writeText(window.location.href)

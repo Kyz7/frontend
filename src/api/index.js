@@ -1,6 +1,7 @@
+// File: src/api/index.js - Updated with debugging and fallback
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || '';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -9,12 +10,67 @@ const api = axios.create({
   },
 });
 
+// Debug function to check token size
+const debugToken = () => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    console.log('🔍 Token length:', token.length);
+    console.log('🔍 Token size in bytes:', new Blob([token]).size);
+    
+    // Try to decode token to see payload
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        console.log('🔍 Token payload:', payload);
+        console.log('🔍 Payload size:', JSON.stringify(payload).length);
+      }
+    } catch (e) {
+      console.log('❌ Could not decode token');
+    }
+  }
+};
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
+    // Debug token before sending
+    debugToken();
+    
+    // Check if this is the problematic endpoint
+    if (config.url === '/plans') {
+      console.log('🚨 Making request to /plans endpoint');
+      console.log('🚨 Full headers:', config.headers);
+    }
+    
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+});
+
+// Add response interceptor to catch 431 errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 431) {
+      console.error('🚨 431 Error - Request Header Fields Too Large');
+      console.error('🚨 This usually means the Authorization header is too large');
+      debugToken();
+      
+      // Clear potentially corrupted token
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Alternative: Create a separate API instance without token for testing
+const apiWithoutAuth = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 export const login = (credentials) => api.post('/auth/login', credentials);
@@ -36,7 +92,34 @@ export const geocode = (address) => api.get(`/api/geocode`, { params: { address 
 export const reverseGeocode = (lat, lon) => api.get(`/api/geocode/reverse`, { params: { lat, lon } });
 
 export const savePlan = (planData) => api.post('/plans', planData);
-export const getUserPlans = () => api.get('/plans');
+
+// Alternative getUserPlans with manual token handling
+export const getUserPlans = () => {
+  const token = localStorage.getItem('token');
+  console.log('📍 getUserPlans called, token exists:', !!token);
+  
+  if (!token) {
+    return Promise.reject(new Error('No token found'));
+  }
+  
+  // Try with minimal headers first
+  return axios({
+    method: 'GET',
+    url: `${API_URL}/plans`,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    timeout: 10000 // 10 second timeout
+  }).catch(error => {
+    if (error.response?.status === 431) {
+      console.error('🚨 431 error on getUserPlans');
+      // Try without any custom headers
+      return axios.get(`${API_URL}/plans?token=${encodeURIComponent(token)}`);
+    }
+    throw error;
+  });
+};
 
 export const deletePlan = (planId) => api.delete(`/plans/${planId}`);
 

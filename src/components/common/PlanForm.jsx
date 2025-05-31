@@ -93,7 +93,7 @@ const PlanForm = ({ place, className }) => {
           });
         }
       } catch (error) {
-        console.error('Error getting server estimation:', error);
+        //console.error('Error getting server estimation:', error);
         setEstimation({
           duration,
           totalCost,
@@ -101,7 +101,7 @@ const PlanForm = ({ place, className }) => {
         });
       }
     } catch (error) {
-      console.error('Error calculating estimation:', error);
+      //console.error('Error calculating estimation:', error);
     } finally {
       setLoading(false);
     }
@@ -170,7 +170,7 @@ const PlanForm = ({ place, className }) => {
       }, 2000);
       
     } catch (error) {
-      console.error('Error saving plan:', error);
+      //console.error('Error saving plan:', error);
       setSaveError('Gagal menyimpan rencana perjalanan. Silakan coba lagi.');
     } finally {
       setSaveLoading(false);
