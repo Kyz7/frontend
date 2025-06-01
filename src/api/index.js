@@ -91,7 +91,7 @@ export const getPlaces = (lat, lon, radius = 50000, query = '', type = '') => {
 export const geocode = (address) => api.get(`/api/geocode`, { params: { address } });
 export const reverseGeocode = (lat, lon) => api.get(`/api/geocode/reverse`, { params: { lat, lon } });
 
-export const savePlan = (planData) => api.post('/plans', planData);
+export const savePlan = (planData) => api.post('/api/plans', planData);
 
 // Alternative getUserPlans with manual token handling
 export const getUserPlans = () => {
@@ -105,7 +105,7 @@ export const getUserPlans = () => {
   // Try with minimal headers first
   return axios({
     method: 'GET',
-    url: `${API_URL}/plans`,
+    url: `${API_URL}/api/plans`,
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
