@@ -17,6 +17,8 @@ const PlanForm = ({ place, className }) => {
   const [nearestAirports, setNearestAirports] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [showFlightInput, setShowFlightInput] = useState(false); // Tambahan state untuk manual input
+  const [manualFlightCost, setManualFlightCost] = useState(''); // State untuk input manual
   
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -29,23 +31,59 @@ const PlanForm = ({ place, className }) => {
     setStartDate(formatDate(today));
     setEndDate(formatDate(tomorrow));
 
+    // Check for flight estimation from localStorage (from FlightEstimation component)
     const flightEstimation = localStorage.getItem('flightEstimation');
+    console.log('Flight estimation from localStorage:', flightEstimation); // Debug log
+    
     if (flightEstimation) {
       try {
         const parsedData = JSON.parse(flightEstimation);
+        console.log('Parsed flight data:', parsedData); // Debug log
+        
         if (parsedData.estimatedCost) {
           setFlightCost(parsedData.estimatedCost);
+          console.log('Flight cost set:', parsedData.estimatedCost); // Debug log
         }
         if (parsedData.origin && parsedData.destination) {
           setNearestAirports({
             origin: parsedData.origin,
             destination: parsedData.destination
           });
+          console.log('Airports set:', parsedData.origin, parsedData.destination); // Debug log
         }
       } catch (error) {
         console.error('Error parsing flight estimation from localStorage:', error);
       }
+    } else {
+      console.log('No flight estimation found in localStorage'); // Debug log
     }
+
+    // Also check for direct props or context if FlightEstimation passes data differently
+    // This is a fallback to ensure we show flight options
+    const checkFlightData = () => {
+      // Set a small delay to allow FlightEstimation component to save data
+      setTimeout(() => {
+        const updatedFlightEstimation = localStorage.getItem('flightEstimation');
+        if (updatedFlightEstimation && !flightCost) {
+          try {
+            const parsedData = JSON.parse(updatedFlightEstimation);
+            if (parsedData.estimatedCost) {
+              setFlightCost(parsedData.estimatedCost);
+            }
+            if (parsedData.origin && parsedData.destination) {
+              setNearestAirports({
+                origin: parsedData.origin,
+                destination: parsedData.destination
+              });
+            }
+          } catch (error) {
+            console.error('Error parsing delayed flight estimation:', error);
+          }
+        }
+      }, 1000);
+    };
+
+    checkFlightData();
   }, []);
 
   const formatDate = (date) => {
@@ -65,8 +103,11 @@ const PlanForm = ({ place, className }) => {
       
       let totalCost = pricePerDay * duration * (parseInt(adults) + parseInt(children) * 0.5);
       
-      if (includeFlightCost && flightCost > 0) {
-        totalCost += flightCost * (parseInt(adults) + parseInt(children) * 0.75);
+      // Use flight cost (either from localStorage or manual input)
+      const currentFlightCost = manualFlightCost ? parseFloat(manualFlightCost) : flightCost;
+      
+      if (includeFlightCost && currentFlightCost > 0) {
+        totalCost += currentFlightCost * (parseInt(adults) + parseInt(children) * 0.75);
       }
       
       try {
@@ -74,7 +115,7 @@ const PlanForm = ({ place, className }) => {
           pricePerDay,
           startDate,
           endDate,
-          flightCost: includeFlightCost ? flightCost : 0,
+          flightCost: includeFlightCost ? currentFlightCost : 0,
           adults,
           children
         });
@@ -93,7 +134,7 @@ const PlanForm = ({ place, className }) => {
           });
         }
       } catch (error) {
-        //console.error('Error getting server estimation:', error);
+        // If server estimation fails, use client-side calculation
         setEstimation({
           duration,
           totalCost,
@@ -101,7 +142,7 @@ const PlanForm = ({ place, className }) => {
         });
       }
     } catch (error) {
-      //console.error('Error calculating estimation:', error);
+      console.error('Error calculating estimation:', error);
     } finally {
       setLoading(false);
     }
@@ -111,7 +152,7 @@ const PlanForm = ({ place, className }) => {
     if (startDate && endDate) {
       calculateEstimation();
     }
-  }, [startDate, endDate, adults, children, includeFlightCost]);
+  }, [startDate, endDate, adults, children, includeFlightCost, manualFlightCost]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -153,11 +194,13 @@ const PlanForm = ({ place, className }) => {
         }
       };
       
-      if (includeFlightCost && nearestAirports) {
+      const currentFlightCost = manualFlightCost ? parseFloat(manualFlightCost) : flightCost;
+      
+      if (includeFlightCost && (nearestAirports || manualFlightCost)) {
         planData.flight = {
-          origin: nearestAirports.origin,
-          destination: nearestAirports.destination,
-          cost: flightCost
+          origin: nearestAirports?.origin || 'Manual Input',
+          destination: nearestAirports?.destination || place.title || place.name,
+          cost: currentFlightCost
         };
       }
       
@@ -170,7 +213,7 @@ const PlanForm = ({ place, className }) => {
       }, 2000);
       
     } catch (error) {
-      //console.error('Error saving plan:', error);
+      console.error('Error saving plan:', error);
       setSaveError('Gagal menyimpan rencana perjalanan. Silakan coba lagi.');
     } finally {
       setSaveLoading(false);
@@ -238,26 +281,91 @@ const PlanForm = ({ place, className }) => {
             </div>
           </div>
           
-          {/* Flight option - only show if flightCost is available */}
-          {flightCost > 0 && nearestAirports && (
-            <div className="mt-4">
-              <div className="flex items-center">
-                <input
-                  id="includeFlightCost"
-                  type="checkbox"
-                  checked={includeFlightCost}
-                  onChange={(e) => setIncludeFlightCost(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="includeFlightCost" className="ml-2 block text-sm text-gray-700">
-                  Sertakan biaya penerbangan ({nearestAirports.origin} - {nearestAirports.destination})
-                </label>
+          {/* Flight Options Section */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-3">Opsi Penerbangan</h3>
+            
+            {/* Debug info - remove in production */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mb-2 text-xs text-gray-400">
+                Debug: flightCost={flightCost}, airports={nearestAirports?.origin} - {nearestAirports?.destination}
               </div>
-              <p className="text-sm text-gray-500 mt-1">
-                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(flightCost)} per orang (pulang-pergi)
-              </p>
-            </div>
-          )}
+            )}
+            
+            {/* Show flight estimation if available */}
+            {(flightCost > 0 || (nearestAirports && nearestAirports.origin)) ? (
+              <div className="mb-4">
+                <div className="flex items-center">
+                  <input
+                    id="includeFlightCost"
+                    type="checkbox"
+                    checked={includeFlightCost}
+                    onChange={(e) => setIncludeFlightCost(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="includeFlightCost" className="ml-2 block text-sm text-gray-700">
+                    Sertakan biaya penerbangan 
+                    {nearestAirports && nearestAirports.origin && nearestAirports.destination && 
+                      ` (${nearestAirports.origin} - ${nearestAirports.destination})`
+                    }
+                  </label>
+                </div>
+                <p className="text-sm text-gray-500 mt-1 ml-6">
+                  {flightCost > 0 ? 
+                    `${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(flightCost)} per orang (pulang-pergi)` :
+                    'Estimasi biaya penerbangan sedang dihitung...'
+                  }
+                </p>
+              </div>
+            ) : (
+              // Fallback option for manual input if no flight data available
+              <div className="mb-4">
+                <div className="flex items-center">
+                  <input
+                    id="includeManualFlightCost"
+                    type="checkbox"
+                    checked={showFlightInput}
+                    onChange={(e) => {
+                      setShowFlightInput(e.target.checked);
+                      if (e.target.checked) {
+                        setIncludeFlightCost(true);
+                      } else {
+                        setIncludeFlightCost(false);
+                        setManualFlightCost('');
+                      }
+                    }}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="includeManualFlightCost" className="ml-2 block text-sm text-gray-700">
+                    Masukkan biaya penerbangan
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 mt-1 ml-6">
+                  Estimasi penerbangan belum tersedia, Anda bisa memasukkan biaya sendiri
+                </p>
+                
+                {/* Manual flight cost input field */}
+                {showFlightInput && (
+                  <div className="mt-3 ml-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Biaya Penerbangan per Orang (IDR)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="Contoh: 1500000"
+                      value={manualFlightCost}
+                      onChange={(e) => setManualFlightCost(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Masukkan biaya tiket pesawat pulang-pergi per orang
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           
           {estimation && (
             <div className="bg-blue-50 p-4 rounded-lg mt-4">
@@ -268,6 +376,11 @@ const PlanForm = ({ place, className }) => {
               <div className="text-2xl font-bold text-blue-600">
                 {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(estimation.totalCost)}
               </div>
+              {estimation.flightIncluded && (
+                <div className="text-xs text-gray-500 mt-1">
+                  * Termasuk biaya penerbangan untuk {parseInt(adults) + parseInt(children)} orang
+                </div>
+              )}
             </div>
           )}
           

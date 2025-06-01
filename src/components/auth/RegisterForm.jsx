@@ -69,7 +69,7 @@ const RegisterForm = ({ onRegisterSuccess, onRegisterError }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('http://localhost:3000/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -80,15 +80,29 @@ const RegisterForm = ({ onRegisterSuccess, onRegisterError }) => {
         }),
       });
 
-      const data = await response.json();
-
+      // Check if response is ok first before trying to parse JSON
       if (!response.ok) {
-        // Handle specific MySQL/database errors
-        if (data.error?.includes('Duplicate entry') || data.error?.includes('unique constraint')) {
-          throw new Error('Username sudah digunakan, silakan pilih username lain');
+        // Try to get error message from response
+        let errorMessage = 'Pendaftaran gagal';
+        try {
+          const errorData = await response.json();
+          if (errorData.error?.includes('Duplicate entry') || errorData.error?.includes('unique constraint')) {
+            errorMessage = 'Username sudah digunakan, silakan pilih username lain';
+          } else {
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          }
+        } catch (jsonError) {
+          // If JSON parsing fails, use status-based error message
+          if (response.status === 431) {
+            errorMessage = 'Request terlalu besar. Silakan coba lagi.';
+          } else {
+            errorMessage = `Error ${response.status}: ${response.statusText}`;
+          }
         }
-        throw new Error(data.error || data.message || 'Pendaftaran gagal');
+        throw new Error(errorMessage);
       }
+
+      const data = await response.json();
 
       if (onRegisterSuccess) {
         onRegisterSuccess(data.message || 'Pendaftaran berhasil! Silakan login.');
